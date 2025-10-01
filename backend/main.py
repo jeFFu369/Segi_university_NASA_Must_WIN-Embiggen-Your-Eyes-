@@ -14,17 +14,17 @@ from sqlalchemy.orm import sessionmaker, relationship
 from typing import Optional, List, Dict, Any
 import logging
 
-# 配置日志
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 创建数据库引擎和会话
+# Create database engine and session
 DATABASE_URL = "sqlite:///nasa_images.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 数据模型
+# Data models
 class Dataset(Base):
     __tablename__ = "datasets"
     id = Column(Integer, primary_key=True, index=True)
@@ -50,7 +50,7 @@ class ImageFile(Base):
     is_base_layer = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     dataset = relationship("Dataset", back_populates="files")
-    # 对于金字塔结构的图像存储
+    # For pyramid structure image storage
     pyramid_levels = relationship("PyramidLevel", back_populates="image_file", cascade="all, delete-orphan")
 
 class PyramidLevel(Base):
@@ -62,14 +62,14 @@ class PyramidLevel(Base):
     height = Column(Integer)
     tile_width = Column(Integer, default=256)
     tile_height = Column(Integer, default=256)
-    file_path = Column(String)  # 存储金字塔层级的路径
+    file_path = Column(String)  # Path to store pyramid level
     image_file = relationship("ImageFile", back_populates="pyramid_levels")
 
 class Label(Base):
     __tablename__ = "labels"
     id = Column(Integer, primary_key=True, index=True)
     dataset_id = Column(Integer, ForeignKey("datasets.id"))
-    user_id = Column(String)  # 可以是用户名或匿名ID
+    user_id = Column(String)  # Can be username or anonymous ID
     x = Column(Float)
     y = Column(Float)
     width = Column(Float, nullable=True)
@@ -78,14 +78,14 @@ class Label(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # 支持多边形标签
-    polygon_points = Column(Text, nullable=True)  # JSON格式的点列表
+    # Support for polygon labels
+    polygon_points = Column(Text, nullable=True)  # List of points in JSON format
     dataset = relationship("Dataset", back_populates="labels")
 
-# 创建数据库表
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# 依赖项：获取数据库会话
+# Dependency: Get database session
 def get_db():
     db = SessionLocal()
     try:
@@ -93,30 +93,30 @@ def get_db():
     finally:
         db.close()
 
-# 创建FastAPI应用
+# Create FastAPI application
 app = FastAPI(title="NASA Space App Challenge - Embiggen Your Eyes", 
               description="A platform for exploring massive NASA image datasets")
 
-# 创建必要的目录
+# Create necessary directories
 UPLOAD_DIR = "uploads"
 PYRAMID_DIR = "pyramids"
 for dir_path in [UPLOAD_DIR, PYRAMID_DIR]:
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-# 辅助函数：创建图像金字塔
+# Helper function: Create image pyramid
 def create_image_pyramid(image_data, base_filename, tile_size=256):
-    """为大型图像创建金字塔结构以支持高效缩放"""
+    """Create pyramid structure for large images to support efficient zooming"""
     pyramid_files = []
     current_image = image_data
     level = 0
     
-    # 确保图像是2D或3D（如果是彩色）
+    # Ensure image is 2D or 3D (if color)
     if len(current_image.shape) > 3:
-        current_image = current_image[0]  # 取第一个通道
+        current_image = current_image[0]  # Take the first channel
     
     while True:
-        # 为当前层级创建目录
+        # Create directory for current level
         level_dir = os.path.join(PYRAMID_DIR, f"{base_filename}_level_{level}")
         if not os.path.exists(level_dir):
             os.makedirs(level_dir)
@@ -125,7 +125,7 @@ def create_image_pyramid(image_data, base_filename, tile_size=256):
         tiles_x = (width + tile_size - 1) // tile_size
         tiles_y = (height + tile_size - 1) // tile_size
         
-        # 保存当前层级信息
+        # Save current level information
         pyramid_info = {
             "level": level,
             "width": width,
@@ -137,7 +137,7 @@ def create_image_pyramid(image_data, base_filename, tile_size=256):
             "tiles": []
         }
         
-        # 创建并保存所有瓦片
+        # Create and save all tiles
         for y in range(tiles_y):
             for x in range(tiles_x):
                 y_start = y * tile_size
@@ -156,7 +156,7 @@ def create_image_pyramid(image_data, base_filename, tile_size=256):
                     "filename": tile_filename
                 })
         
-        # 保存层级信息
+        # Save level information
         info_path = os.path.join(level_dir, "info.json")
         with open(info_path, "w") as f:
             json.dump(pyramid_info, f)
@@ -167,17 +167,17 @@ def create_image_pyramid(image_data, base_filename, tile_size=256):
             "info": pyramid_info
         })
         
-        # 检查是否需要继续创建更小的层级
+        # Check if we need to continue creating smaller levels
         if width <= tile_size and height <= tile_size:
             break
         
-        # 缩小图像（下采样）
+        # Downscale the image
         current_image = transform.rescale(current_image, 0.5, anti_aliasing=True)
         level += 1
     
     return pyramid_files
 
-# API端点
+# API endpoints
 @app.post("/datasets/")
 async def create_dataset(
     name: str = Query(...),
@@ -186,7 +186,7 @@ async def create_dataset(
     source: str = Query(...),
     db: SessionLocal = Depends(get_db)
 ):
-    """创建新的数据集"""
+    """Create a new dataset"""
     dataset = Dataset(
         name=name,
         description=description,
@@ -206,7 +206,7 @@ async def list_datasets(
     limit: int = Query(10, ge=1, le=100),
     db: SessionLocal = Depends(get_db)
 ):
-    """列出所有数据集"""
+    """List all datasets"""
     query = db.query(Dataset)
     if type:
         query = query.filter(Dataset.type == type)
@@ -223,36 +223,36 @@ async def upload_image_to_dataset(
     is_base_layer: bool = Query(False),
     db: SessionLocal = Depends(get_db)
 ):
-    """上传图像文件到指定数据集"""
-    # 检查数据集是否存在
+    """Upload an image file to a specific dataset"""
+    # Check if dataset exists
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
     
     try:
-        # 读取文件内容
+        # Read file content
         content = await file.read()
         
-        # 生成唯一的文件名
+        # Generate unique filename
         file_extension = os.path.splitext(file.filename)[1].lower()
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
         
-        # 保存文件
+        # Save file
         with open(file_path, "wb") as f:
             f.write(content)
         
-        # 处理FITS文件
+        # Process FITS file
         if file_extension == ".fits":
             with fits.open(io.BytesIO(content)) as hdul:
                 data = hdul[0].data
                 height, width = data.shape[:2]
                 
-                # 创建图像金字塔以支持缩放
+                # Create image pyramid to support zooming
                 pyramid_base_filename = os.path.splitext(unique_filename)[0]
                 pyramid_files = create_image_pyramid(data, pyramid_base_filename)
                 
-                # 保存图像信息到数据库
+                # Save image information to database
                 image_file = ImageFile(
                     dataset_id=dataset_id,
                     filename=file.filename,
@@ -267,7 +267,7 @@ async def upload_image_to_dataset(
                 db.commit()
                 db.refresh(image_file)
                 
-                # 保存金字塔层级信息
+                # Save pyramid level information
                 for p in pyramid_files:
                     pyramid_level = PyramidLevel(
                         image_file_id=image_file.id,
@@ -281,16 +281,16 @@ async def upload_image_to_dataset(
                     db.add(pyramid_level)
                 db.commit()
         else:
-            # 处理其他图像格式（简化版）
-            # 在实际应用中，应该使用适当的库来读取其他格式的图像
+            # Process other image formats (simplified version)
+            # In a real application, appropriate libraries should be used to read other image formats
             image_file = ImageFile(
                 dataset_id=dataset_id,
                 filename=file.filename,
                 file_path=file_path,
-                width=0,  # 占位符
-                height=0,  # 占位符
+                width=0,  # Placeholder
+                height=0,  # Placeholder
                 file_size=len(content),
-                image_type=file_extension[1:],  # 去掉点号
+                image_type=file_extension[1:],  # Remove dot
                 is_base_layer=is_base_layer
             )
             db.add(image_file)
@@ -307,7 +307,7 @@ async def list_dataset_images(
     dataset_id: int,
     db: SessionLocal = Depends(get_db)
 ):
-    """列出指定数据集的所有图像"""
+    """List all images in a specific dataset"""
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -319,7 +319,7 @@ async def get_image_pyramid_info(
     image_id: int,
     db: SessionLocal = Depends(get_db)
 ):
-    """获取图像金字塔信息，用于前端缩放"""
+    """Get image pyramid information for frontend zooming"""
     image_file = db.query(ImageFile).filter(ImageFile.id == image_id).first()
     if not image_file:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -347,7 +347,7 @@ async def get_image_tile(
     y: int,
     db: SessionLocal = Depends(get_db)
 ):
-    """获取图像的特定瓦片，用于前端显示"""
+    """Get a specific image tile for frontend display"""
     image_file = db.query(ImageFile).filter(ImageFile.id == image_id).first()
     if not image_file:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -360,24 +360,24 @@ async def get_image_tile(
     if not pyramid_level:
         raise HTTPException(status_code=404, detail="Pyramid level not found")
     
-    # 读取瓦片信息
+    # Read tile information
     base_filename = os.path.splitext(os.path.basename(image_file.file_path))[0]
     level_dir = os.path.join(PYRAMID_DIR, f"{base_filename}_level_{level}")
     
     try:
-        # 读取层级信息
+        # Read level information
         with open(os.path.join(level_dir, "info.json"), "r") as f:
             level_info = json.load(f)
         
-        # 检查请求的瓦片是否存在
+        # Check if requested tile exists
         tile_found = False
         for tile in level_info["tiles"]:
             if tile["x"] == x and tile["y"] == y:
                 tile_path = os.path.join(level_dir, tile["filename"])
                 if os.path.exists(tile_path):
-                    # 加载瓦片数据
+                    # Load tile data
                     tile_data = np.load(tile_path)
-                    # 将NumPy数组转换为列表返回
+                    # Convert NumPy array to list for return
                     return {
                         "data": tile_data.tolist(),
                         "width": tile_data.shape[1],
@@ -405,7 +405,7 @@ async def create_label(
     polygon_points: Optional[str] = Query(None),
     db: SessionLocal = Depends(get_db)
 ):
-    """在数据集中创建新标签"""
+    """Create a new label in a dataset"""
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -438,22 +438,22 @@ async def get_dataset_labels(
     label_type: Optional[str] = Query(None),
     db: SessionLocal = Depends(get_db)
 ):
-    """获取数据集中的标签，支持按区域和类型过滤"""
+    """Get labels in a dataset, supporting filtering by region and type"""
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
     
     query = db.query(Label).filter(Label.dataset_id == dataset_id)
     
-    # 按区域过滤
+    # Filter by region
     if x_min is not None and y_min is not None and x_max is not None and y_max is not None:
-        # 简化的区域过滤，实际应用中可能需要更复杂的几何计算
+        # Simplified region filtering, more complex geometric calculations may be needed in a real application
         query = query.filter(
             Label.x.between(x_min, x_max),
             Label.y.between(y_min, y_max)
         )
     
-    # 按标签类型过滤
+    # Filter by label type
     if label_type:
         query = query.filter(Label.label == label_type)
     
@@ -466,32 +466,32 @@ async def enhance_image(
     method: str = Query("denoise", enum=["denoise", "contrast", "sharpen"]),
     strength: float = Query(0.1, ge=0.01, le=1.0)
 ):
-    """增强图像质量"""
+    """Enhance image quality"""
     try:
         content = await file.read()
         
         with fits.open(io.BytesIO(content)) as hdul:
             data = hdul[0].data
             
-            # 根据选择的方法增强图像
+            # Enhance image based on selected method
             if method == "denoise":
                 enhanced = restoration.denoise_tv_chambolle(data, weight=strength)
             elif method == "contrast":
-                # 简单的对比度增强
+                # Simple contrast enhancement
                 p2, p98 = np.percentile(data, (2, 98))
                 enhanced = np.clip((data - p2) / (p98 - p2) * 255, 0, 255).astype(np.uint8)
             elif method == "sharpen":
-                # 简单的锐化
+                # Simple sharpening
                 from skimage.filters import unsharp_mask
                 if len(data.shape) > 2:
-                    # 对多通道图像应用锐化
+                    # Apply sharpening to multi-channel images
                     enhanced = np.zeros_like(data)
                     for i in range(data.shape[0]):
                         enhanced[i] = unsharp_mask(data[i], radius=1, amount=strength)
                 else:
                     enhanced = unsharp_mask(data, radius=1, amount=strength)
             
-        # 返回增强后的图像数据（限制大小用于演示）
+        # Return enhanced image data (limited size for demo)
         return {
             "data": enhanced.tolist()[:1000],
             "method": method,
@@ -508,14 +508,14 @@ async def search_features(
     limit: int = Query(10, ge=1, le=100),
     db: SessionLocal = Depends(get_db)
 ):
-    """搜索图像中的特征（简化版，实际应用中可能需要AI支持）"""
-    # 这里只是一个简单的实现，匹配标签中的文本
-    # 在实际应用中，可以集成AI模型进行更复杂的图像特征搜索
+    """Search for features in images (simplified version, may require AI support in a real application)"""
+    # This is a simple implementation that matches text in labels
+    # In a real application, AI models could be integrated for more complex image feature search
     
     search_query = f"%{query.lower()}%"
     
     if dataset_id:
-        # 检查数据集是否存在
+        # Check if dataset exists
         dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
@@ -533,7 +533,7 @@ async def search_features(
 
 @app.get("/")
 async def root():
-    """API根端点"""
+    """API root endpoint"""
     return {
         "message": "Welcome to NASA Space App Challenge - Embiggen Your Eyes",
         "version": "1.0",
