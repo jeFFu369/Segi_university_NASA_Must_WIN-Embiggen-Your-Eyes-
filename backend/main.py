@@ -1,7 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query, File, UploadFile, Request
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from PIL import Image
 from astropy.io import fits
 import io
@@ -100,11 +101,17 @@ def get_db():
 app = FastAPI(title="NASA Space App Challenge - Embiggen Your Eyes", 
               description="A platform for exploring massive NASA image datasets")
 
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+# Set up Jinja2 templates
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "templates"))
+
+# Serve static files
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "static")), name="static")
+
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
+
 # Create necessary directories
-UPLOAD_DIR = "uploads"
-PYRAMID_DIR = "pyramids"
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+PYRAMID_DIR = os.path.join(os.path.dirname(__file__), "pyramids")
 for dir_path in [UPLOAD_DIR, PYRAMID_DIR]:
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
@@ -539,25 +546,9 @@ async def search_features(
     return labels
 
 @app.get("/")
-async def root():
-    """API root endpoint"""
-    return {
-        "message": "Welcome to NASA Space App Challenge - Embiggen Your Eyes",
-        "version": "1.0",
-        "endpoints": [
-            {"method": "GET", "path": "/", "description": "API root endpoint"},
-            {"method": "POST", "path": "/datasets/", "description": "Create a new dataset"},
-            {"method": "GET", "path": "/datasets/", "description": "List all datasets"},
-            {"method": "POST", "path": "/datasets/{dataset_id}/upload-image", "description": "Upload an image to a dataset"},
-            {"method": "GET", "path": "/datasets/{dataset_id}/images/", "description": "List images in a dataset"},
-            {"method": "GET", "path": "/images/{image_id}/pyramid-info", "description": "Get image pyramid information"},
-            {"method": "GET", "path": "/images/{image_id}/tile/{level}/{x}/{y}", "description": "Get a specific image tile"},
-            {"method": "POST", "path": "/datasets/{dataset_id}/labels/", "description": "Create a new label"},
-            {"method": "GET", "path": "/datasets/{dataset_id}/labels/", "description": "Get labels in a dataset"},
-            {"method": "POST", "path": "/process-image/enhance", "description": "Enhance image quality"},
-            {"method": "GET", "path": "/search-features", "description": "Search for features in images"}
-        ]
-    }
+async def root(request: Request):
+    """Serve the main HTML page"""
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 
