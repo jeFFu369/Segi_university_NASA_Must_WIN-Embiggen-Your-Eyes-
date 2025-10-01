@@ -1,0 +1,44 @@
+body {
+    background: #0b0c10;
+    color: #e0e1dd;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Sidebar */
+.col-md-3 {
+    background: #162447;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+
+.list-group-item:hover {
+    background: #123d27;
+}
+
+.suBmit{
+    background-color:#123d27;
+    color:white; 
+    border: 1px solid white;
+}
+
+
+
+/* Viewer */
+#viewer {
+    height: 90vh;
+    background: black;
+    border-radius: 10px;
+    /* box-shadow: 0 0 15px rgba(0,255,255,0.3); */
+}
+
+/* Annotation dots */
+.label-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00ffff;
+    border: 2px solid #0b0c10;
+    box-shadow: 0 0 5px #00ffff;
+}
