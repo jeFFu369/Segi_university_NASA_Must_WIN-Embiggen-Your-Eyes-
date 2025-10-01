@@ -1,164 +1,614 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en" crxemulator="" crosspilot="">
+    <plasmo-csui></plasmo-csui>
+    <head>
+        <style>body {transition: opacity ease-in 0.2s; } 
+        body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+        </style>
   <meta charset="UTF-8">
-  <title>NASA Embiggen Your Eyes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NASA Embiggen Your Eyes - Explore the Universe</title>
   <!-- Bootstrap -->
    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
    <link rel="stylesheet" href="/static/styles.css">
   
   <!-- OpenSeadragon -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script><style type="text/css" id="operaUserStyle">
+  video {
+    filter: -opera-shader(url(data:text/plain;base64,Ly8gaHR0cHM6Ly9naXRodWIuY29tL0dQVU9wZW4tRWZmZWN0cy9GaWRlbGl0eUZYLUNBUwovLyB2MwoKdW5pZm9ybSBzaGFkZXIgaUNodW5rOwp1bmlmb3JtIGZsb2F0MiBpQ2h1bmtTaXplOwp1bmlmb3JtIGZsb2F0MiBpTW91c2U7CnVuaWZvcm0gZmxvYXQgaUFyZ3NbMV07Cgpjb25zdCBmbG9hdCBFUFNJT04gPSAwLjE7CmNvbnN0IGZsb2F0IFZfTUlOID0gMDsKY29uc3QgZmxvYXQgVl9MT1cgPSAwLjI1Owpjb25zdCBmbG9hdCBWX01FRCA9IDAuNTsKY29uc3QgZmxvYXQgVl9ISUdIID0gMC43NTsKY29uc3QgZmxvYXQgVl9NQVggPSAxOwoKY29uc3QgZmxvYXQgVEhSRVNIT0xEX0FSRUEgPSA4MDAgKiA2MDA7CmNvbnN0IGZsb2F0IE1JTl9BUkVBID0gNDAwICogMTAwOwpjb25zdCBmbG9hdCBNSU5fU1RSSVAgPSAyMDsKY29uc3QgZmxvYXQgTUFSR0lOID0gMTsKCmZsb2F0MyBwaXhlbChpbnQgeCwgaW50IHksIGZsb2F0MiB4eSkgewogICAgcmV0dXJuIGlDaHVuay5ldmFsKHh5ICsgZmxvYXQyKHgsIHkpKS5yZ2I7Cn0KCmZsb2F0MyBzaGFycGVuKGZsb2F0MiB4eSkgewogICAgZmxvYXQzIGYgPQogICAgICAgIHBpeGVsKC0xLCAtMSwgeHkpICogIDEgKwogICAgICAgIHBpeGVsKCAwLCAtMSwgeHkpICogLTEgKwogICAgICAgIHBpeGVsKCAxLCAtMSwgeHkpICogIDEgKwoKICAgICAgICBwaXhlbCgtMSwgMCwgeHkpICogLTEgICsKICAgICAgICBwaXhlbCggMCwgMCwgeHkpICogLTEgICsKICAgICAgICBwaXhlbCggMSwgMCwgeHkpICogLTEgICsKCiAgICAgICAgcGl4ZWwoLTEsIDEsIHh5KSAqIDEgICArCiAgICAgICAgcGl4ZWwoIDAsIDEsIHh5KSAqIC0xICArCiAgICAgICAgcGl4ZWwoIDEsIDEsIHh5KSAqIDE7CiAgICByZXR1cm4gZiAvIC0xOwp9CgpmbG9hdDQgUkdYMihmbG9hdDIgeHkpIHsKICAgIGZsb2F0NCBjb2xvciA9IGlDaHVuay5ldmFsKHh5KTsKCiAgICBpZiAoaUNodW5rU2l6ZS54ICogaUNodW5rU2l6ZS55IDwgTUlOX0FSRUEpIHsKICAgICAgICByZXR1cm4gY29sb3I7CiAgICB9CgogICAgaWYgKGlDaHVua1NpemUueSA8IE1JTl9TVFJJUCB8fCBpQ2h1bmtTaXplLnggPCBNSU5fU1RSSVApIHsKICAgICAgICByZXR1cm4gY29sb3I7CiAgICB9CgogICAgaWYgKHh5LnggPCBNQVJHSU4gfHwgeHkueCA+IChpQ2h1bmtTaXplLnggLSBNQVJHSU4pIHx8CiAgICAgICAgeHkueSA8IE1BUkdJTiB8fCB4eS55ID4gKGlDaHVua1NpemUueSAtIE1BUkdJTikpIHsKICAgICAgICByZXR1cm4gY29sb3I7CiAgICB9CgogICAgcmV0dXJuIGZsb2F0NChzaGFycGVuKHh5KSwgMSk7Cn0KCmZsb2F0IG1pbjMoZmxvYXQgeCwgZmxvYXQgeSwgZmxvYXQgeikgewogICAgcmV0dXJuIG1pbih4LCBtaW4oeSwgeikpOwp9CgpmbG9hdCBtYXgzKGZsb2F0IHgsIGZsb2F0IHksIGZsb2F0IHopIHsKICAgIHJldHVybiBtYXgoeCwgbWF4KHksIHopKTsKfQoKZmxvYXQgcmNwKGZsb2F0IHYpIHsKICAgIHJldHVybiAxIC8gdjsKfQoKZmxvYXQzIFJHWDMoZmxvYXQyIHh5LCBmbG9hdCBzdHJlbmd0aCkgewogICAgZmxvYXQzIGEgPSBwaXhlbCgtMSwgLTEsIHh5KTsKICAgIGZsb2F0MyBiID0gcGl4ZWwoIDAsIC0xLCB4eSk7CiAgICBmbG9hdDMgYyA9IHBpeGVsKCAxLCAtMSwgeHkpOwoKICAgIGZsb2F0MyBkID0gcGl4ZWwoLTEsIDAsIHh5KTsKICAgIGZsb2F0MyBlID0gcGl4ZWwoIDAsIDAsIHh5KTsKICAgIGZsb2F0MyBmID0gcGl4ZWwoIDEsIDAsIHh5KTsKCiAgICBmbG9hdDMgZyA9IHBpeGVsKC0xLCAxLCB4eSk7CiAgICBmbG9hdDMgaCA9IHBpeGVsKCAwLCAxLCB4eSk7CiAgICBmbG9hdDMgaSA9IHBpeGVsKCAxLCAxLCB4eSk7CgogICAgZmxvYXQgbW5SID0gbWluMyhtaW4zKGQuciwgZS5yLCBmLnIpLCBiLnIsIGgucik7CiAgICBmbG9hdCBtbkcgPSBtaW4zKG1pbjMoZC5nLCBlLmcsIGYuZyksIGIuZywgaC5nKTsKICAgIGZsb2F0IG1uQiA9IG1pbjMobWluMyhkLmIsIGUuYiwgZi5iKSwgYi5iLCBoLmIpOwoKICAgIGZsb2F0IG1uUjIgPSBtaW4zKG1pbjMobW5SLCBhLnIsIGMuciksIGcuciwgaS5yKTsKICAgIGZsb2F0IG1uRzIgPSBtaW4zKG1pbjMobW5HLCBhLmcsIGMuZyksIGcuZywgaS5nKTsKICAgIGZsb2F0IG1uQjIgPSBtaW4zKG1pbjMobW5CLCBhLmIsIGMuYiksIGcuYiwgaS5iKTsKCiAgICBtblIgPSBtblIgKyBtblIyOwogICAgbW5HID0gbW5HICsgbW5HMjsKICAgIG1uQiA9IG1uQiArIG1uQjI7CgogICAgZmxvYXQgbXhSID0gbWF4MyhtYXgzKGQuciwgZS5yLCBmLnIpLCBiLnIsIGgucik7CiAgICBmbG9hdCBteEcgPSBtYXgzKG1heDMoZC5nLCBlLmcsIGYuZyksIGIuZywgaC5nKTsKICAgIGZsb2F0IG14QiA9IG1heDMobWF4MyhkLmIsIGUuYiwgZi5iKSwgYi5iLCBoLmIpOwoKICAgIGZsb2F0IG14UjIgPSBtYXgzKG1heDMobXhSLCBhLnIsIGMuciksIGcuciwgaS5yKTsKICAgIGZsb2F0IG14RzIgPSBtYXgzKG1heDMobXhHLCBhLmcsIGMuZyksIGcuZywgaS5nKTsKICAgIGZsb2F0IG14QjIgPSBtYXgzKG1heDMobXhCLCBhLmIsIGMuYiksIGcuYiwgaS5iKTsKCiAgICBteFIgPSBteFIgKyBteFIyOwogICAgbXhHID0gbXhHICsgbXhHMjsKICAgIG14QiA9IG14QiArIG14QjI7CgogICAgZmxvYXQgcmNwTVIgPSByY3AobXhSKTsKICAgIGZsb2F0IHJjcE1HID0gcmNwKG14Ryk7CiAgICBmbG9hdCByY3BNQiA9IHJjcChteEIpOwoKICAgIGZsb2F0IGFtcFIgPSBzYXR1cmF0ZShtaW4obW5SLCAyIC0gbXhSKSAqIHJjcE1SKTsKICAgIGZsb2F0IGFtcEcgPSBzYXR1cmF0ZShtaW4obW5HLCAyIC0gbXhHKSAqIHJjcE1HKTsKICAgIGZsb2F0IGFtcEIgPSBzYXR1cmF0ZShtaW4obW5CLCAyIC0gbXhCKSAqIHJjcE1CKTsKCiAgICBhbXBSID0gc3FydChhbXBSKTsKICAgIGFtcEcgPSBzcXJ0KGFtcEcpOwogICAgYW1wQiA9IHNxcnQoYW1wQik7CgogICAgZmxvYXQgcGVhayA9IC1yY3AobWl4KDgsIDUsIHN0cmVuZ3RoKSk7CgogICAgZmxvYXQgd1IgPSBhbXBSICogcGVhazsKICAgIGZsb2F0IHdHID0gYW1wRyAqIHBlYWs7CiAgICBmbG9hdCB3QiA9IGFtcEIgKiBwZWFrOwoKICAgIGZsb2F0IHJjcFdlaWdodFIgPSByY3AoMSArIDQgKiB3Uik7CiAgICBmbG9hdCByY3BXZWlnaHRHID0gcmNwKDEgKyA0ICogd0cpOwogICAgZmxvYXQgcmNwV2VpZ2h0QiA9IHJjcCgxICsgNCAqIHdCKTsKCiAgICByZXR1cm4gZmxvYXQzKAogICAgICAgIHNhdHVyYXRlKChiLnIgKiB3UiArIGQuciAqIHdSICsgZi5yICogd1IgKyBoLnIgKiB3UiArIGUucikgKiByY3BXZWlnaHRSKSwKICAgICAgICBzYXR1cmF0ZSgoYi5nICogd0cgKyBkLmcgKiB3RyArIGYuZyAqIHdHICsgaC5nICogd0cgKyBlLmcpICogcmNwV2VpZ2h0RyksCiAgICAgICAgc2F0dXJhdGUoKGIuYiAqIHdCICsgZC5iICogd0IgKyBmLmIgKiB3QiArIGguYiAqIHdCICsgZS5iKSAqIHJjcFdlaWdodEIpKTsKfQoKCmZsb2F0NCBtYWluKGZsb2F0MiB4eSkgewoKICAgIGZsb2F0NCBvcmlnaW5hbENvbG9yID0gaUNodW5rLmV2YWwoeHkpOwogICAgaWYgKG9yaWdpbmFsQ29sb3IuYSA8IDEpIHsKICAgICAgICByZXR1cm4gaUNodW5rLmV2YWwoeHkpOwogICAgfQoKICAgIGZsb2F0IGludGVuc2l0eSA9IGlBcmdzWzBdOwogICAgZmxvYXQgc3RyZW5ndGggPSAwOwogICAgZmxvYXQzIGNvbG9yOwoKICAgIGlmIChpbnRlbnNpdHkgPCBWX01JTiArIEVQU0lPTikgewogICAgICAgIHN0cmVuZ3RoID0gMC4xMDsKICAgICAgICBjb2xvciA9IFJHWDMoeHksIHN0cmVuZ3RoKTsKCiAgICB9IGVsc2UgaWYgKGludGVuc2l0eSA+IFZfTE9XIC0gRVBTSU9OICYmIGludGVuc2l0eSA8IFZfTE9XICsgRVBTSU9OKSB7CiAgICAgICAgc3RyZW5ndGggPSAwLjMzOwogICAgICAgIGNvbG9yID0gUkdYMyh4eSwgc3RyZW5ndGgpOwoKICAgIH0gZWxzZSBpZiAoaW50ZW5zaXR5ID4gVl9NRUQgLSBFUFNJT04gJiYgaW50ZW5zaXR5IDwgVl9NRUQgKyBFUFNJT04pIHsKICAgICAgICBzdHJlbmd0aCA9IDAuNTsKICAgICAgICBjb2xvciA9IFJHWDMoeHksIHN0cmVuZ3RoKTsKCiAgICB9IGVsc2UgaWYgKGludGVuc2l0eSA+IFZfSElHSCAtIEVQU0lPTiAmJiBpbnRlbnNpdHkgPCBWX0hJR0ggKyBFUFNJT04pIHsKICAgICAgICBzdHJlbmd0aCA9IDAuOTk7CiAgICAgICAgY29sb3IgPSBSR1gzKHh5LCBzdHJlbmd0aCk7CgogICAgfSBlbHNlIGlmIChpbnRlbnNpdHkgPiBWX01BWCAtIEVQU0lPTikgewogICAgICAgIHN0cmVuZ3RoID0gMTsKICAgICAgICBjb2xvciA9IFJHWDIoeHkpLnJnYjsKICAgIH0KCiAgICByZXR1cm4gZmxvYXQ0KGNvbG9yLCBvcmlnaW5hbENvbG9yLmEpOwp9) -opera-args(0.50 calc(env(-opera-accent-color-r, 255)/255) calc(env(-opera-accent-color-g, 255)/255) calc(env(-opera-accent-color-b, 255)/255)));
+  }
+</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background:#111; color:#fff; }
-    #viewer { height: 90vh; background:black; }
-    .dataset-item { cursor:pointer; }
+    body { 
+      background: linear-gradient(135deg, #0b0c10 0%, #162447 50%, #1f2833 100%);
+      color: #e0e1dd; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+    #viewer { 
+      height: 85vh; 
+      background: radial-gradient(circle, #000000 0%, #1a1a1a 100%);
+      border-radius: 15px;
+      box-shadow: 0 0 30px rgba(102, 252, 241, 0.2);
+    }
+    .dataset-item { 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+    .dataset-item:hover {
+      background: #45a29e !important;
+      border-left: 3px solid #66fcf1;
+      transform: translateX(5px);
+    }
     .label-dot {
-      width:10px; height:10px; border-radius:50%;
-      background:red; position:absolute;
+      width: 12px; 
+      height: 12px; 
+      border-radius: 50%;
+      background: #00ffff;
+      position: absolute;
+      box-shadow: 0 0 8px #00ffff;
+      border: 2px solid #0b0c10;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .label-dot:hover {
+      transform: scale(1.5);
+    }
+    .navbar-brand {
+      font-weight: bold;
+      background: linear-gradient(90deg, #66fcf1, #45a29e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(102, 252, 241, 0.1);
+      border-radius: 15px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      border-color: rgba(102, 252, 241, 0.3);
+    }
+    .feature-icon {
+      font-size: 2rem;
+      color: #66fcf1;
+      margin-bottom: 15px;
+    }
+    .stats-card {
+      text-align: center;
+      padding: 20px;
+    }
+    .stats-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #66fcf1;
+      text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+    }
+    .loading-spinner {
+      display: none;
+      width: 3rem;
+      height: 3rem;
+      border: 4px solid rgba(102, 252, 241, 0.3);
+      border-top: 4px solid #66fcf1;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 8px;
+      color: white;
+      background: #45a29e;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      transform: translateX(200%);
+      transition: transform 0.3s ease;
+    }
+    .notification.show {
+      transform: translateX(0);
+    }
+    .image-info {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
     }
   </style>
-</head>
-<body class="container-fluid">
+<style type="text/css"></style><style>
+      .ellipsis-animation {
+        display: inline-flex;
+        width: 1.5em;
+        justify-content: flex-start;
+      }
+      .ellipsis-animation .dot {
+        animation: dot 1.5s infinite;
+      }
+      .ellipsis-animation .dot:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .ellipsis-animation .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .ellipsis-animation .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes dot {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+      }
+    </style></head>
+<body cz-shortcut-listen="true">
+  <!-- Notification Container -->
+  <div id="notification" class="notification"></div>
 
-  <div class="row">
-    <!-- Sidebar -->
-    <div class="col-md-3 bg-dark p-3">
-      <h2 class="sidebar-title mb-4">NASA Embiggen Your Eyes</h2>
-
-      <h4 class="text-light">Datasets</h4>
-      <ul id="dataset-list" class="list-group mb-3"></ul>
-    
-
-      <h5 class="text-light mt-3">Search</h5>
-        <div class="input-group mb-2">
-        <input type="text" id="searchQuery" class="form-control" placeholder="Search..">
-        <button class="btn btn-sm submit" onclick="searchLabels()">Find</button>
-        </div>
-      
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-telescope me-2"></i>NASA Embiggen Your Eyes
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-home me-1"></i> Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i> About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-cog me-1"></i> Settings</a>
+          </li>
+        </ul>
+      </div>
     </div>
+  </nav>
 
-    <!-- Main Viewer -->
-    <div class="col-md-9">
-      <div id="viewer"></div>
+  <div class="container-fluid mt-4">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-3">
+        <div class="card p-3">
+          <h2 class="sidebar-title mb-4 text-center"><i class="fas fa-database me-2"></i>Datasets</h2>
+          
+          <!-- Stats Cards -->
+          <div class="row mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="dataset-count">2</div>
+                <div>Datasets</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="image-count">7</div>
+                <div>Images</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dataset List -->
+          <h4 class="text-light"><i class="fas fa-folder me-2"></i>Available Datasets</h4>
+          <div id="loading-datasets" class="loading-spinner" style="display: none;"></div>
+          <ul id="dataset-list" class="list-group mb-3"><li class="list-group-item list-group-item-action dataset-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-folder me-2"></i>Mars Rover Images</span>
+              <span class="badge bg-primary rounded-pill">Mars</span>
+            </div>
+            <small class="text-muted">High-resolution images captured by Mars rovers</small>
+          </li><li class="list-group-item list-group-item-action dataset-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-folder me-2"></i>Hubble Deep Field</span>
+              <span class="badge bg-primary rounded-pill">Galaxy</span>
+            </div>
+            <small class="text-muted">Deep space images from the Hubble Space Telescope</small>
+          </li></ul>
+          
+          <!-- Search Section -->
+          <div class="search-container mt-4">
+            <h5 class="text-light"><i class="fas fa-search me-2"></i>Search Features</h5>
+            <div class="input-group mb-2">
+              <input type="text" id="searchQuery" class="form-control" placeholder="Search labels...">
+              <button class="btn btn-sm submit" onclick="searchLabels()">
+                <i class="fas fa-search"></i> Find
+              </button>
+            </div>
+            <div class="form-text text-muted">
+              Search for labeled features in current dataset
+            </div>
+          </div>
+          
+          <!-- Annotation Tools -->
+          <div class="mt-4">
+            <h5 class="text-light"><i class="fas fa-pencil-alt me-2"></i>Annotation Tools</h5>
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary" onclick="toggleAnnotationMode()">
+                <i class="fas fa-mouse-pointer me-1"></i>Toggle Annotation Mode
+              </button>
+              <button class="btn btn-outline-secondary" onclick="clearLabels()">
+                <i class="fas fa-trash me-1"></i>Clear All Labels
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Feature Highlights -->
+        <div class="card p-3 mt-4">
+          <h5 class="text-light text-center"><i class="fas fa-star me-2"></i>Innovative Features</h5>
+          <div class="text-center">
+            <div class="feature-icon">
+              <i class="fas fa-infinity"></i>
+            </div>
+            <p>Deep Zoom Technology</p>
+            
+            <div class="feature-icon">
+              <i class="fas fa-robot"></i>
+            </div>
+            <p>AI-Powered Enhancement</p>
+            
+            <div class="feature-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <p>Collaborative Labeling</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Viewer -->
+      <div class="col-md-9">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 id="current-dataset-title">Mars Rover Images</h3>
+            <div>
+              <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
+                <i class="fas fa-expand"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-light" onclick="downloadImage()">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div id="loading-viewer" class="loading-spinner" style="display: none;"></div>
+          <div id="viewer"><div class="openseadragon-container" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; width: 100%; height: 100%; overflow: hidden; left: 0px; top: 0px; text-align: left; touch-action: none; pointer-events: auto;"><div class="openseadragon-canvas" tabindex="0" dir="ltr" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; width: 100%; height: 100%; overflow: hidden; top: 0px; left: 0px; touch-action: none; pointer-events: auto; text-align: left;"><canvas width="865" height="785" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; width: 100%; height: 100%; pointer-events: none; touch-action: none;"></canvas><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static;"></div></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; left: 0px; top: 0px;"><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; display: inline-block;"><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; display: inline-block; touch-action: none; pointer-events: auto;"><div title="Zoom in" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; touch-action: none; display: inline-block; pointer-events: auto;"><img src="https://openseadragon.github.io/openseadragon/images/zoomin_rest.png" alt="Zoom in" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; pointer-events: none;"><img src="https://openseadragon.github.io/openseadragon/images/zoomin_grouphover.png" alt="Zoom in" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; opacity: 0;"><img src="https://openseadragon.github.io/openseadragon/images/zoomin_hover.png" alt="Zoom in" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"><img src="https://openseadragon.github.io/openseadragon/images/zoomin_pressed.png" alt="Zoom in" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"></div><div title="Zoom out" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; touch-action: none; display: inline-block; pointer-events: auto;"><img src="https://openseadragon.github.io/openseadragon/images/zoomout_rest.png" alt="Zoom out" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; pointer-events: none;"><img src="https://openseadragon.github.io/openseadragon/images/zoomout_grouphover.png" alt="Zoom out" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; opacity: 0;"><img src="https://openseadragon.github.io/openseadragon/images/zoomout_hover.png" alt="Zoom out" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"><img src="https://openseadragon.github.io/openseadragon/images/zoomout_pressed.png" alt="Zoom out" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"></div><div title="Go home" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; touch-action: none; display: inline-block; pointer-events: auto;"><img src="https://openseadragon.github.io/openseadragon/images/home_rest.png" alt="Go home" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; pointer-events: none;"><img src="https://openseadragon.github.io/openseadragon/images/home_grouphover.png" alt="Go home" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; opacity: 0;"><img src="https://openseadragon.github.io/openseadragon/images/home_hover.png" alt="Go home" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"><img src="https://openseadragon.github.io/openseadragon/images/home_pressed.png" alt="Go home" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"></div><div title="Toggle full page" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; touch-action: none; display: inline-block; pointer-events: auto;"><img src="https://openseadragon.github.io/openseadragon/images/fullpage_rest.png" alt="Toggle full page" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; pointer-events: none;"><img src="https://openseadragon.github.io/openseadragon/images/fullpage_grouphover.png" alt="Toggle full page" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; opacity: 0;"><img src="https://openseadragon.github.io/openseadragon/images/fullpage_hover.png" alt="Toggle full page" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"><img src="https://openseadragon.github.io/openseadragon/images/fullpage_pressed.png" alt="Toggle full page" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; pointer-events: none; top: 0px; left: 0px; visibility: hidden;"></div></div></div></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; right: 0px; top: 0px;"></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; right: 0px; bottom: 0px;"><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; display: inline-block;"><div id="navigator-1759328219232" class=" navigator" style="background: rgb(0, 0, 0); border: 2px solid rgb(85, 85, 85); margin: 0px; padding: 0px; position: relative; touch-action: none; opacity: 0.8; overflow: hidden; display: inline-block; width: 120px; height: 100px; pointer-events: auto;"><div class="openseadragon-container" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: relative; width: 100%; height: 100%; overflow: hidden; left: 0px; top: 0px; text-align: left; touch-action: none; pointer-events: none;"><div class="openseadragon-canvas" tabindex="-1" dir="ltr" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; width: 100%; height: 100%; overflow: hidden; top: 0px; left: 0px; touch-action: none; pointer-events: none; text-align: left;"><canvas width="116" height="96" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; width: 100%; height: 100%; pointer-events: none; touch-action: none;"></canvas><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static;"></div></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; left: 0px; top: 0px;"></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; right: 0px; top: 0px;"></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; right: 0px; bottom: 0px;"></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; left: 0px; bottom: 0px;"></div><div id="navigator-1759328219232-displayregioncontainer" class="displayregioncontainer" style="background: none transparent; border: none; margin: 0px; padding: 0px; position: static; width: 100%; height: 100%; pointer-events: none; touch-action: none; transform: rotate(0deg);"><div id="navigator-1759328219232-displayregion" class="displayregion" style="background: transparent; border: 2px solid rgb(153, 0, 0); margin: 0px; padding: 0px; position: relative; top: 0px; left: -4.06px; font-size: 0px; overflow: hidden; float: left; z-index: 999999999; cursor: default; box-sizing: content-box; pointer-events: none; touch-action: none; transform: rotate(0deg); display: block; width: 121px; height: 93px;"></div></div></div></div></div></div><div style="background: none transparent; border: none; margin: 0px; padding: 0px; position: absolute; left: 0px; bottom: 0px;"></div></div></div>
+          
+          <!-- Image Info -->
+          <div id="image-info" class="image-info" style="display: block;">
+            <div class="row">
+              <div class="col-md-4">
+                <strong>Dimensions:</strong> <span id="image-dimensions">0 × 0</span>
+              </div>
+              <div class="col-md-4">
+                <strong>Type:</strong> <span id="image-type">FITS</span>
+              </div>
+              <div class="col-md-4">
+                <strong>Size:</strong> <span id="image-size">Unknown</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <footer class="text-center text-muted py-4 mt-4">
+    <div class="container">
+      <p>NASA Embiggen Your Eyes - Explore the Universe in High Resolution</p>
+      <p class="small">Powered by FastAPI, OpenSeadragon, and Python</p>
+    </div>
+  </footer>
 
   <script>
     let viewer;
     let currentDataset = null;
     let currentImage = null;
+    let annotationMode = false;
+    let datasets = [];
+    let images = [];
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = 'notification show';
+      notification.style.background = type === 'error' ? '#e74c3c' : '#45a29e';
+      
+      setTimeout(() => {
+        notification.className = 'notification';
+      }, 3000);
+    }
+
+    // Toggle annotation mode
+    function toggleAnnotationMode() {
+      annotationMode = !annotationMode;
+      showNotification(annotationMode ? 'Annotation mode enabled. Click on image to label features.' : 'Annotation mode disabled.');
+    }
+
+    // Clear all labels
+    async function clearLabels() {
+      if (!currentDataset) {
+        showNotification('Please select a dataset first.', 'error');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to clear all labels in this dataset?')) {
+        // In a real implementation, this would call an API to delete all labels
+        if (viewer) viewer.clearOverlays();
+        showNotification('All labels cleared.');
+      }
+    }
+
+    // Toggle fullscreen
+    function toggleFullscreen() {
+      const viewerElement = document.getElementById('viewer');
+      if (!document.fullscreenElement) {
+        viewerElement.requestFullscreen().catch(err => {
+          showNotification('Error attempting to enable fullscreen: ' + err.message, 'error');
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Download image
+    function downloadImage() {
+      if (!currentImage) {
+        showNotification('No image selected.', 'error');
+        return;
+      }
+      showNotification('Download feature would be implemented in a production environment.');
+    }
 
     // Initialize Viewer
     function initViewer(imageId, info) {
-      if (viewer) viewer.destroy();
-      viewer = OpenSeadragon({
-        id: "viewer",
-        prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
-        tileSources: {
-          height: info.original_height,
-          width: info.original_width,
-          tileSize: 256,
-          minLevel: 0,
-          maxLevel: info.levels.length - 1,
-          getTileUrl: (level, x, y) =>
-            `/images/${imageId}/tile/${level}/${x}/${y}`
-        },
+      document.getElementById('loading-viewer').style.display = 'block';
+      
+      setTimeout(() => {
+        if (viewer) viewer.destroy();
+        viewer = OpenSeadragon({
+          id: "viewer",
+          prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
+          tileSources: {
+            height: info.original_height,
+            width: info.original_width,
+            tileSize: 256,
+            minLevel: 0,
+            maxLevel: info.levels.length - 1,
+            getTileUrl: (level, x, y) =>
+              `/images/${imageId}/tile/${level}/${x}/${y}`
+          },
 
-        // enable mouse scroll zoom
-        gestureSettingsMouse: {
-            scrollToZoom: true,     
-            clickToZoom: false
-        },
+          // enable mouse scroll zoom
+          gestureSettingsMouse: {
+              scrollToZoom: true,     
+              clickToZoom: false
+          },
 
-        //enable touch screen zoom
-        gestureSettingsTouch: {
-            pinchToZoom: true,     
-            flickEnabled: true
-        },
+          //enable touch screen zoom
+          gestureSettingsTouch: {
+              pinchToZoom: true,     
+              flickEnabled: true
+          },
 
-        showNavigator: true,
-        showNavigationControl: true
-      });
+          showNavigator: true,
+          showNavigationControl: true,
+          navigatorPosition: 'BOTTOM_RIGHT',
+          navigatorHeight: 100,
+          navigatorWidth: 120,
+          zoomPerClick: 2.0,
+          zoomPerScroll: 1.2,
+          constrainDuringPan: true
+        });
 
-      // Annotation tool - click: add label
-      viewer.addHandler("canvas-click", async function(e) {
-        const point = viewer.viewport.pointFromPixel(e.position);
-        const imgCoords = viewer.viewport.viewportToImageCoordinates(point);
+        // Annotation tool - click: add label
+        viewer.addHandler("canvas-click", async function(e) {
+          if (!annotationMode) return;
+          
+          const point = viewer.viewport.pointFromPixel(e.position);
+          const imgCoords = viewer.viewport.viewportToImageCoordinates(point);
 
-        await fetch(`/datasets/${currentDataset}/labels/?x=${imgCoords.x}&y=${imgCoords.y}&label=feature&user_id=guest`, { method: "POST" });
-        loadLabels(currentDataset);
-      });
+          try {
+            const response = await fetch(`/datasets/${currentDataset}/labels/?x=${imgCoords.x}&y=${imgCoords.y}&label=feature&user_id=guest`, { 
+              method: "POST" 
+            });
+            
+            if (response.ok) {
+              loadLabels(currentDataset);
+              showNotification('Label added successfully!');
+            } else {
+              showNotification('Error adding label.', 'error');
+            }
+          } catch (error) {
+            showNotification('Network error while adding label.', 'error');
+          }
+        });
+        
+        // Update image info
+        updateImageInfo(info);
+        
+        document.getElementById('loading-viewer').style.display = 'none';
+      }, 500); // Simulate loading time
+    }
+
+    // Update image information display
+    function updateImageInfo(info) {
+      document.getElementById('image-info').style.display = 'block';
+      document.getElementById('image-dimensions').textContent = `${info.original_width} × ${info.original_height}`;
+      document.getElementById('image-type').textContent = 'FITS'; // Would be dynamic in real app
+      document.getElementById('image-size').textContent = 'Unknown'; // Would be dynamic in real app
     }
 
     // Load Datasets
     async function loadDatasets() {
-      const res = await fetch("/datasets/");
-      const datasets = await res.json();
-      const list = document.getElementById("dataset-list");
-      list.innerHTML = "";
+      document.getElementById('loading-datasets').style.display = 'block';
+      
+      try {
+        const res = await fetch("/datasets/");
+        datasets = await res.json();
+        const list = document.getElementById("dataset-list");
+        list.innerHTML = "";
 
-      datasets.forEach(ds => {
-        const li = document.createElement("li");
-        li.className = "list-group-item list-group-item-action dataset-item";
-        li.textContent = ds.name;
-        li.onclick = async () => {
-          currentDataset = ds.id;
-          // Load first image
-          const resImg = await fetch(`/datasets/${ds.id}/images/`);
-          const images = await resImg.json();
-          if (images.length > 0) {
-            currentImage = images[0].id;
-            const infoRes = await fetch(`/images/${currentImage}/pyramid-info`);
-            const info = await infoRes.json();
-            initViewer(currentImage, info);
-            loadLabels(ds.id);
-          }
-        };
-        list.appendChild(li);
-      });
+        // Update dataset count
+        document.getElementById('dataset-count').textContent = datasets.length;
+        
+        if (datasets.length === 0) {
+          list.innerHTML = '<li class="list-group-item text-muted">No datasets available</li>';
+          document.getElementById('loading-datasets').style.display = 'none';
+          return;
+        }
+
+        let totalImages = 0;
+        
+        datasets.forEach(ds => {
+          const li = document.createElement("li");
+          li.className = "list-group-item list-group-item-action dataset-item";
+          li.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-folder me-2"></i>${ds.name}</span>
+              <span class="badge bg-primary rounded-pill">${ds.type}</span>
+            </div>
+            <small class="text-muted">${ds.description}</small>
+          `;
+          li.onclick = async () => {
+            selectDataset(ds);
+          };
+          list.appendChild(li);
+          
+          // Get image count for this dataset
+          fetch(`/datasets/${ds.id}/images/`)
+            .then(res => res.json())
+            .then(imgs => {
+              totalImages += imgs.length;
+              document.getElementById('image-count').textContent = totalImages;
+            });
+        });
+      } catch (error) {
+        showNotification('Error loading datasets: ' + error.message, 'error');
+      } finally {
+        document.getElementById('loading-datasets').style.display = 'none';
+      }
+    }
+
+    // Select dataset
+    async function selectDataset(dataset) {
+      currentDataset = dataset.id;
+      document.getElementById('current-dataset-title').textContent = dataset.name;
+      
+      try {
+        // Load images for dataset
+        const resImg = await fetch(`/datasets/${dataset.id}/images/`);
+        images = await resImg.json();
+        
+        if (images.length > 0) {
+          currentImage = images[0].id;
+          const infoRes = await fetch(`/images/${currentImage}/pyramid-info`);
+          const info = await infoRes.json();
+          initViewer(currentImage, info);
+          loadLabels(dataset.id);
+        } else {
+          showNotification('No images available in this dataset.');
+        }
+      } catch (error) {
+        showNotification('Error loading dataset: ' + error.message, 'error');
+      }
     }
 
     // Load Labels
     async function loadLabels(datasetId) {
       if(!viewer) return;
       viewer.clearOverlays();
-      const res = await fetch(`/datasets/${datasetId}/labels/`);
-      const labels = await res.json();
+      
+      try {
+        const res = await fetch(`/datasets/${datasetId}/labels/`);
+        const labels = await res.json();
 
-      labels.forEach(lbl => {
-        const dot = document.createElement("div");
-        dot.className = "label-dot";
+        labels.forEach(lbl => {
+          const dot = document.createElement("div");
+          dot.className = "label-dot";
+          dot.title = lbl.label + (lbl.description ? ': ' + lbl.description : '');
 
-        const viewportPoint = viewer.viewport.imageToViewportCoordinates(lbl.x, lbl.y);
+          const viewportPoint = viewer.viewport.imageToViewportCoordinates(lbl.x, lbl.y);
 
-        viewer.addOverlay({
-          element: dot,
-          location: viewportPoint
+          viewer.addOverlay({
+            element: dot,
+            location: viewportPoint
+          });
         });
-      });
+      } catch (error) {
+        showNotification('Error loading labels: ' + error.message, 'error');
+      }
     }
 
     // Search
     async function searchLabels() {
       const q = document.getElementById("searchQuery").value;
-      if (!currentDataset) return;
-      const res = await fetch(`/search-features?query=${q}&dataset_id=${currentDataset}`);
-      const results = await res.json();
-      viewer.clearOverlays();
+      if (!q.trim()) {
+        showNotification('Please enter a search term.', 'error');
+        return;
+      }
+      
+      if (!currentDataset) {
+        showNotification('Please select a dataset first.', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/search-features?query=${encodeURIComponent(q)}&dataset_id=${currentDataset}`);
+        const results = await res.json();
+        viewer.clearOverlays();
 
-      results.forEach(lbl => {
-    const dot = document.createElement("div");
-    dot.className = "label-dot";
-    dot.style.background = "yellow"; // highlight search results
+        results.forEach(lbl => {
+          const dot = document.createElement("div");
+          dot.className = "label-dot";
+          dot.style.background = "#ffcc00"; // highlight search results
+          dot.style.boxShadow = "0 0 8px #ffcc00";
+          dot.title = `Search result: ${lbl.label}` + (lbl.description ? ' - ' + lbl.description : '');
 
-    const viewportPoint = viewer.viewport.imageToViewportCoordinates(lbl.x, lbl.y);
-    viewer.addOverlay({ element: dot, location: viewportPoint });
-    });
-      alert(`Found ${results.length} matching labels for "${q}"`);
+          const viewportPoint = viewer.viewport.imageToViewportCoordinates(lbl.x, lbl.y);
+          viewer.addOverlay({ element: dot, location: viewportPoint });
+        });
+        
+        showNotification(`Found ${results.length} matching labels for "${q}"`);
+      } catch (error) {
+        showNotification('Error searching labels: ' + error.message, 'error');
+      }
     }
 
-    loadDatasets();
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      loadDatasets();
+    });
   </script>
+
+    <script>(() => {
+        window.addoncropExtensions = window.addoncropExtensions || [];
+        window.addoncropExtensions.push({
+            mode: 'emulator',
+            emulator: 'CRXEmulator',
+            extension: {
+                id: 44,
+                name: 'YouTube Downloader by Addoncrop',
+                version: '17.6.2',
+                date: 'June 15, 2025',
+            },
+            flixmateConnected: false,
+        });
+    })();
+    </script>
+
 </body>
 </html>

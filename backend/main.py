@@ -24,14 +24,11 @@ logger = logging.getLogger(__name__)
 
 # Create database engine and session
 DATABASE_URL = "sqlite:///nasa_images.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+e_base()
 
 # Data models
 class Dataset(Base):
     __tablename__ = "datasets"
-    id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)

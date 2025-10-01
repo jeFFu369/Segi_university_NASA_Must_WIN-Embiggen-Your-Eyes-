@@ -17,10 +17,38 @@ body {
     background: #123d27;
 }
 
-.suBmit{
+.submit{
     background-color:#123d27;
     color:white; 
     border: 1px solid white;
+}
+
+/* Enhanced button styles */
+.btn-primary {
+    background-color: #45a29e;
+    border-color: #45a29e;
+}
+
+.btn-primary:hover {
+    background-color: #66fcf1;
+    border-color: #66fcf1;
+    color: #0b0c10;
+}
+
+/* Search container */
+.search-container {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+/* Dataset title */
+.sidebar-title {
+    color: #66fcf1;
+    text-align: center;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
 }
 
 
