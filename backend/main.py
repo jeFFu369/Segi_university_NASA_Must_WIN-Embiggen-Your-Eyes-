@@ -1,5 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from PIL import Image
 from astropy.io import fits
 import io
 import numpy as np
@@ -97,6 +100,8 @@ def get_db():
 app = FastAPI(title="NASA Space App Challenge - Embiggen Your Eyes", 
               description="A platform for exploring massive NASA image datasets")
 
+app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
 # Create necessary directories
 UPLOAD_DIR = "uploads"
 PYRAMID_DIR = "pyramids"
@@ -377,12 +382,14 @@ async def get_image_tile(
                 if os.path.exists(tile_path):
                     # Load tile data
                     tile_data = np.load(tile_path)
-                    # Convert NumPy array to list for return
-                    return {
-                        "data": tile_data.tolist(),
-                        "width": tile_data.shape[1],
-                        "height": tile_data.shape[0]
-                    }
+                    # Convert NumPy array to PNG for return
+                    pil = Image.fromarray(tile_data.astype(np.uint8))
+                    buf = io.BytesIO()
+                    pil.save(buf, format="PNG")
+                    buf.seek(0)
+                                        
+                    return StreamingResponse(buf, media_type="image/png")
+                    
                 tile_found = True
                 break
         
