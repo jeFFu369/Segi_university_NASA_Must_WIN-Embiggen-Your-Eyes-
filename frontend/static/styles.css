@@ -1,8 +1,7 @@
 body {
-    background: linear-gradient(135deg, #0b0c10 0%, #162447 50%, #1f2833 100%);
-      color: #e0e1dd; 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
+    background: #0b0c10;
+    color: #e0e1dd;
+    font-family: 'Poppins', sans-serif;
 }
 
 /* Sidebar */
@@ -36,11 +35,6 @@ body {
     color: #0b0c10;
 }
 
-.btn-secondary:hover {
-    color: #F5EEDD;
-    border-color: #F5EEDD;
-}
-
 /* Search container */
 .search-container {
     margin-top: 15px;
@@ -57,129 +51,22 @@ body {
     text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
 }
 
-.dataset-item { 
-      cursor: pointer; 
-      transition: all 0.3s ease;
-      border-left: 3px solid transparent;
-}
-.dataset-item:hover {
-    background: #45a29e !important;
-    border-left: 3px solid #66fcf1;
-    transform: translateX(5px);
-}
+
 
 /* Viewer */
 #viewer {
-    height: 85vh; 
-      background: radial-gradient(circle, #000000 0%, #1a1a1a 100%);
-      border-radius: 15px;
-      box-shadow: 0 0 30px rgba(102, 252, 241, 0.2);
-    }
+    height: 90vh;
+    background: black;
+    border-radius: 10px;
+    /* box-shadow: 0 0 15px rgba(0,255,255,0.3); */
+}
 
 /* Annotation dots */
 .label-dot {
-      width: 12px; 
-      height: 12px; 
-      border-radius: 50%;
-      background: #00ffff;
-      position: absolute;
-      box-shadow: 0 0 8px #00ffff;
-      border: 2px solid #0b0c10;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-    .label-dot:hover {
-      transform: scale(1.5);
-    }
-    .navbar-brand {
-      font-weight: bold;
-      background: linear-gradient(90deg, #66fcf1, #45a29e);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(102, 252, 241, 0.1);
-      border-radius: 15px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-      border-color: rgba(102, 252, 241, 0.3);
-    }
-    .feature-icon {
-      font-size: 2rem;
-      color: #66fcf1;
-      margin-bottom: 15px;
-    }
-    .stats-card {
-      text-align: center;
-      padding: 20px;
-    }
-    .stats-number {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #66fcf1;
-      text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
-    }
-    .loading-spinner {
-      display: none;
-      width: 3rem;
-      height: 3rem;
-      border: 4px solid rgba(102, 252, 241, 0.3);
-      border-top: 4px solid #66fcf1;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 25px;
-      border-radius: 8px;
-      color: white;
-      background: #45a29e;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      transform: translateX(200%);
-      transition: transform 0.3s ease;
-    }
-    .notification.show {
-      transform: translateX(0);
-    }
-    .image-info {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
-      padding: 15px;
-      margin-top: 15px;
-    }
-
-    .ellipsis-animation {
-    display: inline-flex;
-    width: 1.5em;
-    justify-content: flex-start;
-    }
-    .ellipsis-animation .dot {
-    animation: dot 1.5s infinite;
-    }
-    .ellipsis-animation .dot:nth-child(1) {
-    animation-delay: 0s;
-    }
-    .ellipsis-animation .dot:nth-child(2) {
-    animation-delay: 0.2s;
-    }
-    .ellipsis-animation .dot:nth-child(3) {
-    animation-delay: 0.4s;
-    }
-    @keyframes dot {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
-    }
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00ffff;
+    border: 2px solid #0b0c10;
+    box-shadow: 0 0 5px #00ffff;
+}
