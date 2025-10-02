@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create database engine and session
-DATABASE_URL = "sqlite:///nasa_images.db"
+DATABASE_URL = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'nasa_images.db')}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
