@@ -189,13 +189,13 @@
           <div class="row mb-4">
             <div class="col-6">
               <div class="card stats-card">
-                <div class="stats-number" id="dataset-count">2</div>
+                <div class="stats-number" id="dataset-count">0</div>
                 <div>Datasets</div>
               </div>
             </div>
             <div class="col-6">
               <div class="card stats-card">
-                <div class="stats-number" id="image-count">7</div>
+                <div class="stats-number" id="image-count">0</div>
                 <div>Images</div>
               </div>
             </div>
@@ -204,19 +204,9 @@
           <!-- Dataset List -->
           <h4 class="text-light"><i class="fas fa-folder me-2"></i>Available Datasets</h4>
           <div id="loading-datasets" class="loading-spinner" style="display: none;"></div>
-          <ul id="dataset-list" class="list-group mb-3"><li class="list-group-item list-group-item-action dataset-item">
-            <div class="d-flex justify-content-between align-items-center">
-              <span><i class="fas fa-folder me-2"></i>Mars Rover Images</span>
-              <span class="badge bg-primary rounded-pill">Mars</span>
-            </div>
-            <small class="text-muted">High-resolution images captured by Mars rovers</small>
-          </li><li class="list-group-item list-group-item-action dataset-item">
-            <div class="d-flex justify-content-between align-items-center">
-              <span><i class="fas fa-folder me-2"></i>Hubble Deep Field</span>
-              <span class="badge bg-primary rounded-pill">Galaxy</span>
-            </div>
-            <small class="text-muted">Deep space images from the Hubble Space Telescope</small>
-          </li></ul>
+          <ul id="dataset-list" class="list-group mb-3">
+            <!-- Datasets will be loaded dynamically by JavaScript -->
+          </ul>
           
           <!-- Search Section -->
           <div class="search-container mt-4">
@@ -272,7 +262,7 @@
       <div class="col-md-9">
         <div class="card p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 id="current-dataset-title">Mars Rover Images</h3>
+            <h3 id="current-dataset-title">Select a Dataset</h3>
             <div>
               <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
                 <i class="fas fa-expand"></i>
@@ -473,6 +463,25 @@
 
         let totalImages = 0;
         
+        // Create promises for all image count requests
+        const imageCountPromises = datasets.map(ds => {
+          return fetch(`/datasets/${ds.id}/images/`)
+            .then(res => res.json())
+            .then(imgs => imgs.length);
+        });
+        
+        // Wait for all image count requests to complete
+        Promise.all(imageCountPromises)
+          .then(imageCounts => {
+            // Calculate total images
+            totalImages = imageCounts.reduce((sum, count) => sum + count, 0);
+            document.getElementById('image-count').textContent = totalImages;
+          })
+          .catch(error => {
+            console.error('Error fetching image counts:', error);
+            document.getElementById('image-count').textContent = 'Error';
+          });
+        
         datasets.forEach(ds => {
           const li = document.createElement("li");
           li.className = "list-group-item list-group-item-action dataset-item";
@@ -487,14 +496,6 @@
             selectDataset(ds);
           };
           list.appendChild(li);
-          
-          // Get image count for this dataset
-          fetch(`/datasets/${ds.id}/images/`)
-            .then(res => res.json())
-            .then(imgs => {
-              totalImages += imgs.length;
-              document.getElementById('image-count').textContent = totalImages;
-            });
         });
       } catch (error) {
         showNotification('Error loading datasets: ' + error.message, 'error');
