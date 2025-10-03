@@ -1,0 +1,54 @@
+table name: datasets
+id	name	description	created_at	updated_at	type	source
+1	Earth Surface	Earth Surface	2025-10-01 09:53:18.867305	2025-10-01 09:53:18.867305	Earth	https://worldview.earthdata.nasa.gov/?v=-361.7483658641388,-153.78063459004,279.8834636730729,161.5687683188239&l=Reference_Labels_15m(hidden),Reference_Features_15m,Coastlines_15m,OCI_PACE_True_Color,VIIRS_NOAA21_CorrectedReflectance_TrueColor,VIIRS_NOAA20_CorrectedReflectance_TrueColor,VIIRS_SNPP_CorrectedReflectance_TrueColor(hidden),MODIS_Aqua_CorrectedReflectance_TrueColor(hidden),MODIS_Terra_CorrectedReflectance_TrueColor(hidden)&lg=true&t=2025-09-29-T18%3A00%3A42Z
+2	Mars Surface	Mars Surface	2025-10-01 09:54:40.211007	2025-10-01 09:54:40.211007	Mars	https://science.nasa.gov/asset/hubble/mars-projection-map/
+3	Galaxy Surface	Galaxy Surface	2025-10-01 09:56:04.526535	2025-10-01 09:56:04.526535	Galaxy	https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-31/#:~:text=In%20January%20of%202025%2C%20NASA&#x27;s,were%20challenging%20to%20stitch%20together.
+
+table name: image_files
+id	dataset_id	filename	file_path	width	height	file_size	image_type	is_base_layer	created_at
+1	1	Earth snapshot.png	uploads\9c226034-e6e0-4891-89cb-ff08e8b3857c.png	5711	2049	8809435	png	0	2025-10-01 09:53:49.463268
+2	2	Mars 1800x824.jpg	uploads\ec81fe45-419b-41f2-bef8-d625009efffc.jpg	1800	824	894813	jpg	0	2025-10-01 09:54:58.622905
+3	3	Hubble_M31Mosaic_2025_42208x9870_STScI-01JGY8MZB6RAYKZ1V4CHGN37Q6.jpg	uploads\b59ea183-e8d2-4ad7-80dd-e13bd4577cb6.jpg	42208	9870	2824807024	jpeg	0	2025-10-01 09:56:20.713719
+
+table name: labels
+id	dataset_id	user_id	x	y	width	height	label	description	created_at	updated_at	polygon_points
+1	1	user1	100	150			Ocean	Large body of water	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+2	1	user1	300	200			Mountain	Mountain range	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+3	2	user1	250	180			Crater	Impact crater	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+4	2	user1	400	300			Valley	Canyon system	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+5	3	user1	500	400			Spiral Arm	Galaxy spiral structure	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+6	3	user1	750	600			Star Cluster	Dense star cluster	2025-10-01 16:01:20.443006	2025-10-01 16:01:20.443006	
+7	1	guest	2058.30205047319	1108.01061382755			feature		2025-10-03 04:04:58.125942	2025-10-03 04:04:58.125942	
+8	1	guest	2400.60173501577	1047.95803759201			feature		2025-10-03 04:04:58.532553	2025-10-03 04:04:58.532553	
+9	1	guest	2658.8278128286	1288.16834253417			feature		2025-10-03 04:04:59.188832	2025-10-03 04:04:59.188832	
+10	1	guest	3379.4587276551	1264.14731203996			feature		2025-10-03 04:04:59.597473	2025-10-03 04:04:59.597473	
+11	1	guest	1863.57730265431	1156.91145136914			feature		2025-10-03 04:05:04.238252	2025-10-03 04:05:04.238252	
+12	1	guest	2048.92476017142	1265.03080158746			feature		2025-10-03 04:05:06.414798	2025-10-03 04:05:06.414798	
+13	1	guest	2070.09941614415	1140.6935488364			feature		2025-10-03 04:05:08.916142	2025-10-03 04:05:08.916142	
+14	1	guest	2088.63416189586	1126.79248952262			feature		2025-10-03 04:05:09.390007	2025-10-03 04:05:09.390007	
+15	1	guest	2074.73310258207	1122.15880308469			feature		2025-10-03 04:05:11.010284	2025-10-03 04:05:11.010284	
+
+table name: pyramid_levels
+id	image_file_id	level	width	height	tile_width	tile_height	file_path
+10	4	0	1800	824	256	256	d:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\afa4b4e4-a088-45db-8bfd-a4ca6ed57439_level_0
+11	4	1	900	412	256	256	d:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\afa4b4e4-a088-45db-8bfd-a4ca6ed57439_level_1
+12	4	2	450	206	256	256	d:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\afa4b4e4-a088-45db-8bfd-a4ca6ed57439_level_2
+13	4	3	225	103	256	256	d:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\afa4b4e4-a088-45db-8bfd-a4ca6ed57439_level_3
+14	3	0	42208	9870	256	256	pyramids/3_level_0.jpg
+15	3	1	21104	4935	256	256	pyramids/3_level_1.jpg
+16	3	2	10552	2467	256	256	pyramids/3_level_2.jpg
+17	3	3	5276	1233	256	256	pyramids/3_level_3.jpg
+18	3	4	2638	616	256	256	pyramids/3_level_4.jpg
+19	3	5	1319	308	256	256	pyramids/3_level_5.jpg
+20	3	6	659	154	256	256	pyramids/3_level_6.jpg
+21	3	7	329	77	256	256	pyramids/3_level_7.jpg
+22	2	0	1800	824	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\ec81fe45-419b-41f2-bef8-d625009efffc_level_0
+23	2	1	900	412	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\ec81fe45-419b-41f2-bef8-d625009efffc_level_1
+24	2	2	450	206	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\ec81fe45-419b-41f2-bef8-d625009efffc_level_2
+25	2	3	225	103	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\ec81fe45-419b-41f2-bef8-d625009efffc_level_3
+26	1	0	5711	2049	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_0
+27	1	1	2856	1024	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_1
+28	1	2	1428	512	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_2
+29	1	3	714	256	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_3
+30	1	4	357	128	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_4
+31	1	5	178	64	256	256	D:\OneDrive - SEGi4u - SEGi Holdings Sdn Bhd (1)\1 SegiKD\Competition\Nasa Space App Challenge\backend\pyramids\9c226034-e6e0-4891-89cb-ff08e8b3857c_level_5

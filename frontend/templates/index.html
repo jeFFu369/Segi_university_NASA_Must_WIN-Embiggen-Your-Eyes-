@@ -262,16 +262,19 @@
       <div class="col-md-9">
         <div class="card p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 id="current-dataset-title">Select a Dataset</h3>
-            <div>
-              <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
-                <i class="fas fa-expand"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-light" onclick="downloadImage()">
-                <i class="fas fa-download"></i>
-              </button>
+              <h3 id="current-dataset-title">Select a Dataset</h3>
+              <div>
+                <button class="btn btn-sm btn-outline-warning me-2" onclick="fixCurrentImagePyramid()">
+                  <i class="fas fa-tools"></i> Fix Pyramid
+                </button>
+                <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
+                  <i class="fas fa-expand"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-light" onclick="downloadImage()">
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
             </div>
-          </div>
           
           <div id="loading-viewer" class="loading-spinner" style="display: none;"></div>
           <div id="viewer">
@@ -425,8 +428,24 @@
     function initViewer(imageId, info) {
       document.getElementById('loading-viewer').style.display = 'block';
       
+      // Store current image ID globally
+      currentImage = imageId;
+      
       setTimeout(() => {
-        if (viewer) viewer.destroy();
+        // Clean up previous viewer instance if it exists
+        if (viewer) {
+          try {
+            viewer.destroy();
+          } catch (e) {
+            console.warn('Error destroying previous viewer:', e);
+          }
+          viewer = null;
+        }
+        
+        // Clear viewer container before creating new instance
+        const viewerContainer = document.getElementById('viewer');
+        viewerContainer.innerHTML = '';
+        
         viewer = OpenSeadragon({
           id: "viewer",
           prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
@@ -462,19 +481,29 @@
           constrainDuringPan: true,
           
           // Improve compatibility configuration
-          debugMode: false,  // Disable debug mode, remove overlay debug information
+          debugMode: false,
           preserveViewport: true,
           visibilityRatio: 1.0,
-          immediateRender: true
+          immediateRender: true,
+          useCanvas: true,
+          // Ensure proper navigator initialization
+          navigatorAutoResize: true
         });
         
         // Add error handling
         viewer.addHandler('tile-error', function(event) {
           console.error('Tile loading error:', event);
+          showNotification('Failed to load some image tiles. Try refreshing the page.', 'error');
         });
         
         viewer.addHandler('open-failed', function(event) {
           console.error('Failed to open image:', event);
+          showNotification('Failed to open the image. This might be due to missing or corrupted pyramid data.', 'error');
+        });
+        
+        viewer.addHandler('tile-loaded', function(event) {
+          // Log tile loading success for debugging
+          console.log('Tile loaded successfully:', event.tile);
         });
 
         // Annotation tool - click: add label
@@ -505,6 +534,43 @@
         
         document.getElementById('loading-viewer').style.display = 'none';
       }, 500); // Simulate loading time
+    }
+
+    // Fix image pyramid (for debugging/troubleshooting)
+    async function fixCurrentImagePyramid() {
+      if (!currentImage) {
+        showNotification('No image selected. Please select an image first.', 'error');
+        return;
+      }
+      
+      try {
+        showNotification('Rebuilding image pyramid... This may take a moment.');
+        const response = await fetch(`/fix-image-pyramid/${currentImage}`, { 
+          method: 'POST' 
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          showNotification(`Successfully rebuilt pyramid: ${result.message}`);
+          
+          // Reload the image to use the new pyramid
+          setTimeout(async () => {
+            try {
+              const infoRes = await fetch(`/images/${currentImage}/pyramid-info`);
+              const info = await infoRes.json();
+              initViewer(currentImage, info);
+            } catch (reloadError) {
+              console.error('Error reloading image:', reloadError);
+            }
+          }, 1000);
+        } else {
+          const error = await response.json();
+          showNotification(`Error rebuilding pyramid: ${error.detail}`, 'error');
+        }
+      } catch (error) {
+        showNotification('Network error while rebuilding pyramid.', 'error');
+        console.error('Pyramid rebuild error:', error);
+      }
     }
 
     // Update image information display
