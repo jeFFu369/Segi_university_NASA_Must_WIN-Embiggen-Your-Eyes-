@@ -12,11 +12,25 @@ import os
 import uuid
 import json
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Text, Boolean, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, Session
 from typing import Optional, List, Dict, Any
 import logging
+from datetime import datetime
+from typing import List, Dict
+
+# Create FastAPI application
+app = FastAPI(title="NASA Space App Challenge - Embiggen Your Eyes", 
+              description="A platform for exploring massive NASA image datasets")
+
+# Set up Jinja2 templates
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "templates"))
+
+# Serve static files
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "static")), name="static")
+
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -97,17 +111,6 @@ def get_db():
     finally:
         db.close()
 
-# Create FastAPI application
-app = FastAPI(title="NASA Space App Challenge - Embiggen Your Eyes", 
-              description="A platform for exploring massive NASA image datasets")
-
-# Set up Jinja2 templates
-templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "templates"))
-
-# Serve static files
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "static")), name="static")
-
-app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
 
 # Create necessary directories
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -281,21 +284,66 @@ async def upload_image_to_dataset(
                     db.add(pyramid_level)
                 db.commit()
         else:
-            # Process other image formats (simplified version)
-            # In a real application, appropriate libraries should be used to read other image formats
-            image_file = ImageFile(
-                dataset_id=dataset_id,
-                filename=file.filename,
-                file_path=file_path,
-                width=0,  # Placeholder
-                height=0,  # Placeholder
-                file_size=len(content),
-                image_type=file_extension[1:],  # Remove dot
-                is_base_layer=is_base_layer
-            )
-            db.add(image_file)
-            db.commit()
-            db.refresh(image_file)
+            # Process other image formats properly
+            try:
+                # Read image dimensions using PIL
+                from PIL import Image
+                import numpy as np
+                
+                with Image.open(io.BytesIO(content)) as img:
+                    width, height = img.size
+                    
+                    # Convert PIL image to numpy array for pyramid creation
+                    img_array = np.array(img)
+                    
+                    # Create image pyramid to support zooming
+                    pyramid_base_filename = os.path.splitext(unique_filename)[0]
+                    pyramid_files = create_image_pyramid(img_array, pyramid_base_filename)
+                    
+                    # Save image information to database
+                    image_file = ImageFile(
+                        dataset_id=dataset_id,
+                        filename=file.filename,
+                        file_path=file_path,
+                        width=width,
+                        height=height,
+                        file_size=len(content),
+                        image_type=file_extension[1:],  # Remove dot
+                        is_base_layer=is_base_layer
+                    )
+                    db.add(image_file)
+                    db.commit()
+                    db.refresh(image_file)
+                    
+                    # Save pyramid level information
+                    for p in pyramid_files:
+                        pyramid_level = PyramidLevel(
+                            image_file_id=image_file.id,
+                            level=p["level"],
+                            width=p["info"]["width"],
+                            height=p["info"]["height"],
+                            tile_width=p["info"]["tile_width"],
+                            tile_height=p["info"]["tile_height"],
+                            file_path=p["path"]
+                        )
+                        db.add(pyramid_level)
+                    db.commit()
+            except Exception as e:
+                logger.warning(f"Failed to process image file {file.filename}: {str(e)}")
+                # Fallback in case of processing errors
+                image_file = ImageFile(
+                    dataset_id=dataset_id,
+                    filename=file.filename,
+                    file_path=file_path,
+                    width=0,  # Placeholder
+                    height=0,  # Placeholder
+                    file_size=len(content),
+                    image_type=file_extension[1:],  # Remove dot
+                    is_base_layer=is_base_layer
+                )
+                db.add(image_file)
+                db.commit()
+                db.refresh(image_file)
         
         return {"message": "Image uploaded successfully", "image_id": image_file.id}
     except Exception as e:
@@ -377,13 +425,24 @@ async def get_image_tile(
                 if os.path.exists(tile_path):
                     # Load tile data
                     tile_data = np.load(tile_path)
-                    # Convert NumPy array to PNG for return
+                    
+                    # Ensure correct handling of RGB images
                     if len(tile_data.shape) == 2:
                         # Grayscale image
                         pil_image = Image.fromarray((tile_data * 255).astype(np.uint8), mode='L')
                     else:
-                        # Color image
-                        pil_image = Image.fromarray((tile_data * 255).astype(np.uint8))
+                        # Color image - ensure RGB format
+                        if tile_data.shape[2] > 3:
+                            tile_data = tile_data[:, :, :3]  # Take only RGB channels
+                        
+                        # Ensure correct data type
+                        if np.max(tile_data) <= 1:
+                            tile_data = (tile_data * 255).astype(np.uint8)
+                        elif tile_data.dtype != np.uint8:
+                            tile_data = tile_data.astype(np.uint8)
+                        
+                        # Use explicit RGB mode
+                        pil_image = Image.fromarray(tile_data, mode='RGB')
                     
                     # Save to bytes
                     img_byte_arr = io.BytesIO()
@@ -526,10 +585,197 @@ async def root(request: Request):
     """Serve the main HTML page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
+def generate_pyramid_levels(file_path, image_id):
+    # Placeholder for pyramid generation - implement based on your needs
+    try:
+        with Image.open(file_path) as img:
+            levels = []
+            current_img = img.copy()
+            level = 0
+            while current_img.width > 256 or current_img.height > 256:
+                level_path = f"pyramids/{image_id}_level_{level}.jpg"
+                os.makedirs(os.path.dirname(level_path), exist_ok=True)
+                current_img.save(level_path)
+                levels.append({
+                    "level": level,
+                    "info": {"width": current_img.width, "height": current_img.height, "tile_width": 256, "tile_height": 256},
+                    "path": level_path
+                })
+                current_img = current_img.resize((current_img.width // 2, current_img.height // 2))
+                level += 1
+            return levels
+    except Exception as e:
+        raise ValueError(f"Pyramid generation failed: {str(e)}")
+
+# Enhanced fix_existing_images endpoint
+@app.post("/fix-existing-images")
+def fix_existing_images(db: Session = Depends(get_db)):
+    """
+    Fix existing images by updating dimensions, file sizes, and generating pyramid levels.
+    Processes images with width or height equal to 0.
+    """
+    # Temporarily disable decompression bomb limit
+    original_max_pixels = Image.MAX_IMAGE_PIXELS
+    Image.MAX_IMAGE_PIXELS = None
+
+    try:
+        images_to_fix = db.query(ImageFile).filter(
+            (ImageFile.width == 0) | (ImageFile.height == 0)
+        ).all()
+        total_images = len(images_to_fix)
+        fixed_count = 0
+        error_count = 0
+        errors = []
+
+        logger.info(f"Starting to fix {total_images} images.")
+
+        # Process each image sequentially
+        for image_file in images_to_fix:
+            logger.info(f"Processing image {image_file.filename} (ID: {image_file.id})")
+            try:
+                # Construct full file path
+                file_path = os.path.join(os.path.dirname(__file__), image_file.file_path)
+                if not os.path.exists(file_path):
+                    error_msg = f"File not found: {file_path}"
+                    errors.append(error_msg)
+                    error_count += 1
+                    logger.error(error_msg)
+                    continue
+
+                # Open and get image dimensions
+                with Image.open(file_path) as img:
+                    width, height = img.size
+                    file_size = os.path.getsize(file_path)
+                    image_type = img.format.lower() if img.format else "unknown"
+
+                # Generate pyramid levels (assuming this function is defined)
+                pyramid_files = generate_pyramid_levels(file_path, image_file.id)
+
+                # Update database
+                db.execute(
+                    text("UPDATE image_files SET width=:width, height=:height, file_size=:file_size, image_type=:image_type WHERE id=:id"),
+                    {
+                        "width": width,
+                        "height": height,
+                        "file_size": file_size,
+                        "image_type": image_type,
+                        "id": image_file.id
+                    }
+                )
+
+                # Delete existing pyramid levels
+                db.execute(
+                    text("DELETE FROM pyramid_levels WHERE image_file_id=:image_file_id"),
+                    {"image_file_id": image_file.id}
+                )
+
+                # Insert new pyramid levels
+                for p in pyramid_files:
+                    db.execute(
+                        text("INSERT INTO pyramid_levels (image_file_id, level, width, height, tile_width, tile_height, file_path) VALUES (:image_file_id, :level, :width, :height, :tile_width, :tile_height, :file_path)"),
+                        {
+                            "image_file_id": image_file.id,
+                            "level": p["level"],
+                            "width": p["info"]["width"],
+                            "height": p["info"]["height"],
+                            "tile_width": p["info"]["tile_width"],
+                            "tile_height": p["info"]["tile_height"],
+                            "file_path": p["path"]
+                        }
+                    )
+
+                db.commit()  # Commit after all updates for this image
+
+                fixed_count += 1
+                logger.info(f"Successfully fixed image {image_file.filename} (ID: {image_file.id})")
+
+            except Exception as e:
+                db.rollback()  # Rollback on error for this image
+                error_msg = f"Error processing image {image_file.filename} (ID: {image_file.id}): {str(e)}"
+                errors.append(error_msg)
+                error_count += 1
+                logger.error(error_msg)
+
+        # Prepare response
+        response = {
+            "total_images_to_fix": total_images,
+            "fixed_count": fixed_count,
+            "error_count": error_count,
+            "errors": errors
+        }
+        logger.info(f"Fix process completed: {response}")
+        return response
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in fix_existing_images endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fixing images: {str(e)}")
+    finally:
+        # Restore original decompression bomb limit
+        Image.MAX_IMAGE_PIXELS = original_max_pixels
+
+# Add endpoint to fix pyramid structure for a specific image
+@app.post("/fix-image-pyramid/{image_id}")
+def fix_image_pyramid(image_id: int, db: Session = Depends(get_db)):
+    """
+    Fix pyramid structure for a specific image
+    """
+    try:
+        # Get image file
+        image_file = db.query(ImageFile).filter(ImageFile.id == image_id).first()
+        if not image_file:
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        logger.info(f"Fixing pyramid for image {image_file.filename} (ID: {image_id})")
+        
+        # Construct full file path
+        file_path = os.path.join(os.path.dirname(__file__), image_file.file_path)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+        
+        # Open image and get dimensions
+        with Image.open(file_path) as img:
+            width, height = img.size
+            
+            # Convert PIL image to numpy array for pyramid creation
+            img_array = np.array(img)
+            
+            # Extract base filename (without extension)
+            base_filename = os.path.splitext(os.path.basename(image_file.file_path))[0]
+            
+            # Create image pyramid
+            pyramid_files = create_image_pyramid(img_array, base_filename)
+            
+            # Delete existing pyramid levels
+            db.query(PyramidLevel).filter(PyramidLevel.image_file_id == image_id).delete()
+            
+            # Save new pyramid level information
+            for p in pyramid_files:
+                pyramid_level = PyramidLevel(
+                    image_file_id=image_id,
+                    level=p["level"],
+                    width=p["info"]["width"],
+                    height=p["info"]["height"],
+                    tile_width=p["info"]["tile_width"],
+                    tile_height=p["info"]["tile_height"],
+                    file_path=p["path"]
+                )
+                db.add(pyramid_level)
+            
+            db.commit()
+            
+            logger.info(f"Successfully fixed pyramid for image {image_file.filename} (ID: {image_id})")
+            
+            return {
+                "message": f"Successfully fixed pyramid for image {image_file.filename}",
+                "image_id": image_id,
+                "levels_created": len(pyramid_files)
+            }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error fixing pyramid for image ID {image_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fixing pyramid: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-

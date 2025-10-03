@@ -459,7 +459,22 @@
           navigatorWidth: 120,
           zoomPerClick: 2.0,
           zoomPerScroll: 1.2,
-          constrainDuringPan: true
+          constrainDuringPan: true,
+          
+          // Improve compatibility configuration
+          debugMode: false,  // Disable debug mode, remove overlay debug information
+          preserveViewport: true,
+          visibilityRatio: 1.0,
+          immediateRender: true
+        });
+        
+        // Add error handling
+        viewer.addHandler('tile-error', function(event) {
+          console.error('Tile loading error:', event);
+        });
+        
+        viewer.addHandler('open-failed', function(event) {
+          console.error('Failed to open image:', event);
         });
 
         // Annotation tool - click: add label
