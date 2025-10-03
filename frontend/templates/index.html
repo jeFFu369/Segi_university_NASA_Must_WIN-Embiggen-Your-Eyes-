@@ -262,7 +262,7 @@
       <div class="col-md-9">
         <div class="card p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 id="current-dataset-title">Select a Dataset</h3>
+            <h3 class= "text-light"id="current-dataset-title">Select a Dataset</h3>
             <div>
               <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
                 <i class="fas fa-expand"></i>
@@ -336,7 +336,7 @@
 
           <!-- Image Info -->
           <div id="image-info" class="image-info" style="display: block;">
-            <div class="row">
+            <div class="row text-light">
               <div class="col-md-4">
                 <strong>Dimensions:</strong> <span id="image-dimensions">0 × 0</span>
               </div>
@@ -422,11 +422,25 @@
     }
 
     // Initialize Viewer
-    function initViewer(imageId, info) {
+    function initViewer(imageId, info, datasetID) {
       document.getElementById('loading-viewer').style.display = 'block';
       
       setTimeout(() => {
         if (viewer) viewer.destroy();
+
+        let imageUrl = "";
+        if(datasetID === 1){
+          imageUrl = "https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74218/world.200412.3x5400x2700.png"
+        }
+        else if (datasetID === 2) {
+          imageUrl = "https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/releases/2007/12/STScI-01EVT6PMZQSAE9S5C3K9Z2TENG.tif?w=1024&h=469&fit=crop&crop=faces%2Cfocalpoint";
+        } else if (datasetID === 3) {
+          imageUrl = "https://science.nasa.gov/wp-content/uploads/2023/04/hs-2015-02-a-hires_jpg-jpg.webp";
+        } else {
+          // default / test URL
+          imageUrl = "https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/releases/2007/12/STScI-01EVT6PMZQSAE9S5C3K9Z2TENG.tif?w=1800&h=824&fit=crop&crop=faces%2Cfocalpoint";
+        }  
+
         viewer = OpenSeadragon({
           id: "viewer",
           prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
@@ -436,8 +450,10 @@
             tileSize: 256,
             minLevel: 0,
             maxLevel: info.levels.length - 1,
-            getTileUrl: (level, x, y) =>
-              `/images/${imageId}/tile/${level}/${x}/${y}`
+            type: "image",
+            url: imageUrl
+            // getTileUrl: (level, x, y) =>
+            //   `/images/${imageId}/tile/${level}/${x}/${y}`
           },
 
           // enable mouse scroll zoom
@@ -460,6 +476,9 @@
           zoomPerClick: 2.0,
           zoomPerScroll: 1.2,
           constrainDuringPan: true,
+          // maxZoomPixelRatio: 1,   // stop "fake zoom" past max resolution
+          // minZoomLevel: 0,        // stop zooming out too far
+          // visibilityRatio: 1.0,
           
           // Improve compatibility configuration
           debugMode: false,  // Disable debug mode, remove overlay debug information
@@ -591,7 +610,7 @@
           currentImage = images[0].id;
           const infoRes = await fetch(`/images/${currentImage}/pyramid-info`);
           const info = await infoRes.json();
-          initViewer(currentImage, info);
+          initViewer(currentImage, info, currentDataset);
           loadLabels(dataset.id);
         } else {
           showNotification('No images available in this dataset.');

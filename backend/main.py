@@ -161,9 +161,16 @@ def create_image_pyramid(image_data, base_filename, tile_size=256):
                 x_end = min((x + 1) * tile_size, width)
                 
                 tile = current_image[y_start:y_end, x_start:x_end]
-                tile_filename = f"tile_{x}_{y}.npy"
+
+                # Convert to uint8 before saving
+                if tile.dtype != np.uint8:
+                    tile = img_as_ubyte(tile)
+
+
+                tile_filename = f"tile_{x}_{y}.png"
                 tile_path = os.path.join(level_dir, tile_filename)
-                np.save(tile_path, tile)
+                
+                io.imsave(tile_path, tile)
                 
                 pyramid_info["tiles"].append({
                     "x": x,
@@ -423,26 +430,8 @@ async def get_image_tile(
             if tile["x"] == x and tile["y"] == y:
                 tile_path = os.path.join(level_dir, tile["filename"])
                 if os.path.exists(tile_path):
-                    # Load tile data
-                    tile_data = np.load(tile_path)
                     
-                    # Ensure correct handling of RGB images
-                    if len(tile_data.shape) == 2:
-                        # Grayscale image
-                        pil_image = Image.fromarray((tile_data * 255).astype(np.uint8), mode='L')
-                    else:
-                        # Color image - ensure RGB format
-                        if tile_data.shape[2] > 3:
-                            tile_data = tile_data[:, :, :3]  # Take only RGB channels
-                        
-                        # Ensure correct data type
-                        if np.max(tile_data) <= 1:
-                            tile_data = (tile_data * 255).astype(np.uint8)
-                        elif tile_data.dtype != np.uint8:
-                            tile_data = tile_data.astype(np.uint8)
-                        
-                        # Use explicit RGB mode
-                        pil_image = Image.fromarray(tile_data, mode='RGB')
+                    pil_image = Image.open(tile_path)
                     
                     # Save to bytes
                     img_byte_arr = io.BytesIO()
