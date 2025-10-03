@@ -408,115 +408,52 @@ async def get_image_tile(
     if not pyramid_level:
         raise HTTPException(status_code=404, detail="Pyramid level not found")
     
-    try:
-        # Use the file path directly from the pyramid_level record
-        level_path = pyramid_level.file_path
-        
-        # Check if this is a directory-based pyramid or a single file pyramid
-        if os.path.isdir(level_path):
-            # Directory-based pyramid - read info.json and load individual tiles
-            with open(os.path.join(level_path, "info.json"), "r") as f:
-                level_info = json.load(f)
-            
-            # Check if requested tile exists
-            tile_found = False
-            for tile in level_info["tiles"]:
-                if tile["x"] == x and tile["y"] == y:
-                    tile_path = os.path.join(level_path, tile["filename"])
-                    if os.path.exists(tile_path):
-                        # Load tile data
-                        tile_data = np.load(tile_path)
-                        tile_found = True
-                        break
-            
-            if not tile_found:
-                raise HTTPException(status_code=404, detail="Tile not found")
-        else:
-            # Single file pyramid - load the entire level file
-            if os.path.exists(level_path):
-                # For .jpg files, we need to extract the specific tile
-                if level_path.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    # Load the entire level image
-                    with Image.open(level_path) as level_img:
-                        # Get the expected dimensions for this pyramid level
-                        expected_width = pyramid_level.width
-                        expected_height = pyramid_level.height
-                        
-                        # Scale the image to match the pyramid level dimensions if needed
-                        if level_img.width != expected_width or level_img.height != expected_height:
-                            level_img = level_img.resize((expected_width, expected_height), Image.Resampling.LANCZOS)
-                        
-                        # Calculate tile position and size
-                        tile_size = 256
-                        tile_x = x * tile_size
-                        tile_y = y * tile_size
-                        
-                        # Ensure we don't go beyond image boundaries
-                        if tile_x + tile_size > level_img.width:
-                            tile_size_x = level_img.width - tile_x
-                        else:
-                            tile_size_x = tile_size
-                        
-                        if tile_y + tile_size > level_img.height:
-                            tile_size_y = level_img.height - tile_y
-                        else:
-                            tile_size_y = tile_size
-                        
-                        # Extract the tile
-                        tile_img = level_img.crop((tile_x, tile_y, tile_x + tile_size_x, tile_y + tile_size_y))
-                        
-                        # Convert to numpy array for consistency
-                        tile_data = np.array(tile_img)
-                else:
-                    # For other file types, try to load as numpy array
-                    tile_data = np.load(level_path)
-            else:
-                raise HTTPException(status_code=404, detail="Pyramid level file not found")
-        
-        # Ensure correct handling of RGB images
-        if len(tile_data.shape) == 2:
-            # Grayscale image
-            pil_image = Image.fromarray((tile_data * 255).astype(np.uint8), mode='L')
-        else:
-            # Color image - ensure RGB format
-            if tile_data.shape[2] == 4:
-                # RGBA image - convert to RGB by compositing on white background
-                from PIL import Image
-                rgba_img = Image.fromarray(tile_data, mode='RGBA')
-                
-                # Create white background
-                white_bg = Image.new('RGB', rgba_img.size, (255, 255, 255))
-                
-                # Composite RGBA image onto white background
-                pil_image = Image.alpha_composite(white_bg.convert('RGBA'), rgba_img).convert('RGB')
-            elif tile_data.shape[2] > 3:
-                # Other multi-channel image - take only RGB channels
-                tile_data = tile_data[:, :, :3]
-                
-                # Ensure correct data type
-                if np.max(tile_data) <= 1:
-                    tile_data = (tile_data * 255).astype(np.uint8)
-                elif tile_data.dtype != np.uint8:
-                    tile_data = tile_data.astype(np.uint8)
-                
-                pil_image = Image.fromarray(tile_data, mode='RGB')
-            else:
-                # RGB image
-                # Ensure correct data type
-                if np.max(tile_data) <= 1:
-                    tile_data = (tile_data * 255).astype(np.uint8)
-                elif tile_data.dtype != np.uint8:
-                    tile_data = tile_data.astype(np.uint8)
-                
-                pil_image = Image.fromarray(tile_data, mode='RGB')
-        
-        # Save to bytes
-        img_byte_arr = io.BytesIO()
-        pil_image.save(img_byte_arr, format='PNG')
-        img_byte_arr.seek(0)
-        
-        return StreamingResponse(img_byte_arr, media_type="image/png")
+    # Read tile information
+    base_filename = os.path.splitext(os.path.basename(image_file.file_path))[0]
+    level_dir = os.path.join(PYRAMID_DIR, f"{base_filename}_level_{level}")
     
+    try:
+        # Read level information
+        with open(os.path.join(level_dir, "info.json"), "r") as f:
+            level_info = json.load(f)
+        
+        # Check if requested tile exists
+        tile_found = False
+        for tile in level_info["tiles"]:
+            if tile["x"] == x and tile["y"] == y:
+                tile_path = os.path.join(level_dir, tile["filename"])
+                if os.path.exists(tile_path):
+                    # Load tile data
+                    tile_data = np.load(tile_path)
+                    
+                    # Ensure correct handling of RGB images
+                    if len(tile_data.shape) == 2:
+                        # Grayscale image
+                        pil_image = Image.fromarray((tile_data * 255).astype(np.uint8), mode='L')
+                    else:
+                        # Color image - ensure RGB format
+                        if tile_data.shape[2] > 3:
+                            tile_data = tile_data[:, :, :3]  # Take only RGB channels
+                        
+                        # Ensure correct data type
+                        if np.max(tile_data) <= 1:
+                            tile_data = (tile_data * 255).astype(np.uint8)
+                        elif tile_data.dtype != np.uint8:
+                            tile_data = tile_data.astype(np.uint8)
+                        
+                        # Use explicit RGB mode
+                        pil_image = Image.fromarray(tile_data, mode='RGB')
+                    
+                    # Save to bytes
+                    img_byte_arr = io.BytesIO()
+                    pil_image.save(img_byte_arr, format='PNG')
+                    img_byte_arr.seek(0)
+                    
+                    return StreamingResponse(img_byte_arr, media_type="image/png")
+                else:
+                    raise HTTPException(status_code=404, detail="Tile file not found")
+        
+        raise HTTPException(status_code=404, detail="Tile not found")
     except Exception as e:
         logger.error(f"Error reading tile: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error reading tile: {str(e)}")
