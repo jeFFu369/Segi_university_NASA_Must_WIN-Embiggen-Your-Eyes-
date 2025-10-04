@@ -366,6 +366,8 @@
     function toggleAnnotationMode() {
       annotationMode = !annotationMode;
       showNotification(annotationMode ? 'Annotation mode enabled. Click on image to label features.' : 'Annotation mode disabled.');
+      loadLabels(currentDataset);
+      
     }
 
     // Clear all labels
@@ -376,11 +378,23 @@
       }
       
       if (confirm('Are you sure you want to clear all labels in this dataset?')) {
-        // In a real implementation, this would call an API to delete all labels
+    try {
+      const response = await fetch(`/datasets/${currentDataset}/labels/`, {
+        method: "DELETE"
+      });
+
+      if (response.ok) {
         if (viewer) viewer.clearOverlays();
-        showNotification('All labels cleared.');
+        showNotification('All labels cleared from backend.');
+        loadLabels(currentDataset);
+      } else {
+        showNotification('Error clearing labels from backend.', 'error');
       }
+    } catch (error) {
+      showNotification('Network error while clearing labels.', 'error');
     }
+  }
+}
 
     // Toggle fullscreen
     function toggleFullscreen() {
@@ -405,7 +419,7 @@
 
     // Initialize Viewer
     function initViewer(imageId, info, datasetID) {
-      document.getElementById('loading-viewer').style.display = 'block';
+      document.getElementById('loading-viewer').style.display = 'none';
       
       setTimeout(() => {
         if (viewer) viewer.destroy();
@@ -485,14 +499,21 @@
           const point = viewer.viewport.pointFromPixel(e.position);
           const imgCoords = viewer.viewport.viewportToImageCoordinates(point);
 
+          // Ask the user for a label
+          const userLabel = prompt("Enter a label for this point:", "feature");
+          if (!userLabel) {
+            showNotification("Label entry cancelled.", "info");
+            return;
+          }
+
           try {
-            const response = await fetch(`/datasets/${currentDataset}/labels/?x=${imgCoords.x}&y=${imgCoords.y}&label=feature&user_id=guest`, { 
+            const response = await fetch(`/datasets/${currentDataset}/labels/?x=${imgCoords.x}&y=${imgCoords.y}&label=${encodeURIComponent(userLabel)}&user_id=guest`, { 
               method: "POST" 
             });
             
             if (response.ok) {
               loadLabels(currentDataset);
-              showNotification('Label added successfully!');
+              showNotification(`Label ${userLabel} added successfully!`);
             } else {
               showNotification('Error adding label.', 'error');
             }

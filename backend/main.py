@@ -518,6 +518,24 @@ async def get_dataset_labels(
     labels = query.all()
     return labels
 
+@app.delete("/datasets/{dataset_id}/labels/", status_code=204)
+async def delete_dataset_labels(
+    dataset_id: int,
+    db: SessionLocal = Depends(get_db)
+):
+    """Delete all labels in a dataset"""
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    deleted_count = db.query(Label).filter(Label.dataset_id == dataset_id).delete()
+    db.commit()
+
+    if deleted_count == 0:
+        raise HTTPException(status_code=404, detail="No labels found to delete")
+
+    return {"message": f"{deleted_count} labels deleted successfully"}
+
 @app.post("/process-image/enhance")
 async def enhance_image(
     image_id: int = Query(...),
