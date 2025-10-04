@@ -30,6 +30,9 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), ".
 # Serve static files
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "frontend", "static")), name="static")
 
+# Serve uploads directory for direct image access
+app.mount("/backend/uploads", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "uploads")), name="uploads")
+
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
 
 # Configure logging
