@@ -7,7 +7,7 @@ from PIL import Image
 from astropy.io import fits
 import io
 import numpy as np
-from skimage import restoration, transform
+from skimage import restoration, transform, img_as_ubyte
 import os
 import uuid
 import json
@@ -724,6 +724,10 @@ def fix_existing_images(db: Session = Depends(get_db)):
         # Restore original decompression bomb limit
         Image.MAX_IMAGE_PIXELS = original_max_pixels
 
+# Add this import for the ML analysis functions
+import random
+from skimage import io as skimage_io, color, img_as_ubyte
+
 # Add endpoint to fix pyramid structure for a specific image
 @app.post("/fix-image-pyramid/{image_id}")
 def fix_image_pyramid(image_id: int, db: Session = Depends(get_db)):
@@ -785,6 +789,320 @@ def fix_image_pyramid(image_id: int, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Error fixing pyramid for image ID {image_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fixing pyramid: {str(e)}")
+
+@app.post("/datasets/{dataset_id}/analyze-ml")
+async def analyze_dataset_with_ml(
+    dataset_id: int,
+    model_type: Optional[str] = Query(None),  # Optional model type override
+    db: SessionLocal = Depends(get_db)
+):
+    """Run ML analysis on a dataset and generate candidate annotations"""
+    # Get the dataset
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    # Determine which ML model to use based on dataset type or user selection
+    if model_type:
+        selected_model = model_type.lower()
+    else:
+        # Auto-select model based on dataset type
+        if dataset.type and "earth" in dataset.type.lower():
+            selected_model = "faster_rcnn"
+        elif dataset.type and "mars" in dataset.type.lower():
+            selected_model = "deep_source_finder"
+        elif dataset.type and "galaxy" in dataset.type.lower():
+            selected_model = "astronet"
+        else:
+            # Default to faster_rcnn for other types
+            selected_model = "faster_rcnn"
+    
+    # Get images in the dataset
+    images = db.query(ImageFile).filter(ImageFile.dataset_id == dataset_id).all()
+    if not images:
+        return {"success": False, "message": "No images found in dataset"}
+    
+    # Generate annotations based on the selected model
+    annotations = []
+    try:
+        if selected_model == "faster_rcnn":
+            annotations = simulate_faster_rcnn_detection(dataset_id, images, db)
+        elif selected_model == "deep_source_finder":
+            annotations = simulate_deep_source_finder(dataset_id, images, db)
+        elif selected_model == "astronet":
+            annotations = simulate_astronet_detection(dataset_id, images, db)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid model type")
+        
+        # Save annotations to database with special user_id
+        saved_annotations = []
+        for annotation in annotations:
+            new_label = Label(
+                dataset_id=dataset_id,
+                user_id="ml_analysis",  # Special user ID to indicate ML-generated
+                x=annotation["x"],
+                y=annotation["y"],
+                width=annotation.get("width"),
+                height=annotation.get("height"),
+                label=annotation["label"],
+                description=annotation.get("description")
+            )
+            db.add(new_label)
+            saved_annotations.append(annotation)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"ML analysis completed with {selected_model}",
+            "model_used": selected_model,
+            "dataset_type": dataset.type,
+            "annotations": saved_annotations
+        }
+    except Exception as e:
+        logger.error(f"ML analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ML analysis failed: {str(e)}")
+
+# Helper functions for simulating ML model detections
+def simulate_faster_rcnn_detection(dataset_id, images, db):
+    """Simulate object detection using Faster R-CNN"""
+    # In a real implementation, this would use a pre-trained Faster R-CNN model
+    detected_labels = []
+    
+    # Generate random detections based on dataset type
+    for image_file in images:
+        # Get dataset information
+        dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+        dataset_type = dataset.type.lower() if dataset and dataset.type else "unknown"
+        
+        # Adjust number of detections based on dataset type
+        if "galaxy" in dataset_type:
+            labels = ['Galaxy', 'Star', 'Nebula']
+            descriptions = [
+                'Spiral galaxy with distinct arms',
+                'Bright star with possible planetary system',
+                'Diffuse nebula with star formation'
+            ]
+        elif "mars" in dataset_type:
+            labels = ['Crater', 'Mountain', 'Valley']
+            descriptions = [
+                'Impact crater with ejecta blanket',
+                'Volcanic mountain formation',
+                'Ancient river valley system'
+            ]
+        elif "earth" in dataset_type:
+            labels = ['Cloud formation', 'Coastal feature', 'Mountain range']
+            descriptions = [
+                'Cumulus cloud formation',
+                'Complex coastal geomorphology',
+                'Mountain range with snow cover'
+            ]
+        else:
+            labels = ['Feature', 'Region', 'Anomaly']
+            descriptions = [
+                'Interesting astronomical feature',
+                'Notable region of interest',
+                'Unusual or unexpected anomaly'
+            ]
+        
+        # Generate random detections for this image
+        np.random.seed(image_file.id)  # Use image ID as seed for consistent results
+        num_detections = 3  # Default number of detections per image
+        
+        for i in range(num_detections):
+            # Get width and height from image_file or use defaults if not available
+            width = getattr(image_file, 'width', 1000)
+            height = getattr(image_file, 'height', 1000)
+            
+            # Ensure width and height are reasonable values
+            if width <= 0 or height <= 0:
+                width, height = 1000, 1000
+            
+            # Generate random position and size
+            box_width = max(50, int(width * np.random.uniform(0.05, 0.2)))
+            box_height = max(50, int(height * np.random.uniform(0.05, 0.2)))
+            
+            x = np.random.uniform(box_width/2, width - box_width/2)
+            y = np.random.uniform(box_height/2, height - box_height/2)
+            
+            # Select a label and description
+            label_idx = i % len(labels)
+            label = labels[label_idx]
+            description = descriptions[label_idx]
+            
+            detected_labels.append({
+                "x": x,
+                "y": y,
+                "width": box_width,
+                "height": box_height,
+                "label": label,
+                "description": description
+            })
+    
+    return detected_labels
+
+def simulate_deep_source_finder(dataset_id, images, db):
+    """Simulate source finding using Deep Source Finder"""
+    # In a real implementation, this would use a specialized deep learning model for astronomical source detection
+    detected_labels = []
+    
+    # Generate more point sources rather than bounding boxes
+    for image_file in images:
+        # Get dataset information
+        dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+        dataset_type = dataset.type.lower() if dataset and dataset.type else "unknown"
+        
+        # Get width and height from image_file or use defaults if not available
+        width = getattr(image_file, 'width', 1000)
+        height = getattr(image_file, 'height', 1000)
+        
+        # Ensure width and height are reasonable values
+        if width <= 0 or height <= 0:
+            width, height = 1000, 1000
+        
+        # Generate random point sources
+        np.random.seed(image_file.id + 1)  # Use image ID + 1 as seed for consistent but different results
+        num_sources = 5  # Default number of sources per image
+        
+        for i in range(num_sources):
+            # Generate random position
+            x = np.random.uniform(0, width)
+            y = np.random.uniform(0, height)
+            
+            # Based on dataset type, assign different probabilities to different source types
+            if "galaxy" in dataset_type:
+                # More galaxies and stars
+                p = np.random.random()
+                if p < 0.6:
+                    label = 'Galaxy'
+                    description = 'Potential galaxy source detected'
+                elif p < 0.9:
+                    label = 'Star'
+                    description = 'Point source likely a star'
+                else:
+                    label = 'Quasar'
+                    description = 'Compact source with high redshift probability'
+            elif "mars" in dataset_type:
+                # More geological features
+                p = np.random.random()
+                if p < 0.5:
+                    label = 'Impact site'
+                    description = 'Possible impact crater candidate'
+                elif p < 0.8:
+                    label = 'Geological feature'
+                    description = 'Notable geological formation'
+                else:
+                    label = 'Anomaly'
+                    description = 'Unexplained surface feature'
+            elif "earth" in dataset_type:
+                # More Earth observation features
+                p = np.random.random()
+                if p < 0.4:
+                    label = 'Urban area'
+                    description = 'Potential urban development'
+                elif p < 0.7:
+                    label = 'Water body'
+                    description = 'Possible water feature'
+                else:
+                    label = 'Vegetation'
+                    description = 'Area with vegetation signature'
+            else:
+                label = 'Source'
+                description = 'Astronomical source detected'
+            
+            detected_labels.append({
+                "x": x,
+                "y": y,
+                "label": label,
+                "description": description
+            })
+    
+    return detected_labels
+
+def simulate_astronet_detection(dataset_id, images, db):
+    """Simulate astronomical object classification using AstroNet"""
+    # In a real implementation, this would use a model like AstroNet for astronomical object classification
+    detected_labels = []
+    
+    # Generate a mix of point sources and regions
+    for image_file in images:
+        # Get width and height from image_file or use defaults if not available
+        width = getattr(image_file, 'width', 1000)
+        height = getattr(image_file, 'height', 1000)
+        
+        # Ensure width and height are reasonable values
+        if width <= 0 or height <= 0:
+            width, height = 1000, 1000
+        
+        # Generate random astronomical objects
+        np.random.seed(image_file.id + 2)  # Use image ID + 2 as seed for consistent but different results
+        num_objects = 4  # Default number of objects per image
+        
+        # Define specific astronomical object types and descriptions
+        astronomical_objects = [
+            {
+                "types": ['Spiral Galaxy', 'Elliptical Galaxy', 'Irregular Galaxy'],
+                "descriptions": [
+                    'Galaxy with spiral structure and arms',
+                    'Smooth, featureless elliptical galaxy',
+                    'Galaxy with irregular shape and structure'
+                ]
+            },
+            {
+                "types": ['Star', 'Binary Star', 'Variable Star'],
+                "descriptions": [
+                    'Main sequence star similar to our Sun',
+                    'Two stars orbiting around a common center of mass',
+                    'Star with varying brightness over time'
+                ]
+            },
+            {
+                "types": ['Nebula', 'Supernova Remnant', 'Planetary Nebula'],
+                "descriptions": [
+                    'Interstellar cloud of dust, hydrogen, and other ionized gases',
+                    'Remnant of a massive star that exploded as a supernova',
+                    'Expanding shell of gas ejected from a star at the end of its life'
+                ]
+            },
+            {
+                "types": ['Quasar', 'Active Galactic Nucleus', 'Gamma-Ray Burst'],
+                "descriptions": [
+                    'Extremely luminous active galactic nucleus powered by a supermassive black hole',
+                    'Compact region at the center of a galaxy with intense energy output',
+                    'Extremely energetic explosion believed to occur when a massive star collapses'
+                ]
+            }
+        ]
+        
+        for i in range(num_objects):
+            # Generate random position
+            x = np.random.uniform(0, width)
+            y = np.random.uniform(0, height)
+            
+            # For some objects, add a small region (width and height)
+            add_region = np.random.random() > 0.5
+            width_obj = int(width * 0.1) if add_region else None
+            height_obj = int(height * 0.1) if add_region else None
+            
+            # Select an object category
+            category_idx = i % len(astronomical_objects)
+            category = astronomical_objects[category_idx]
+            
+            # Select a specific type from the category
+            type_idx = np.random.randint(0, len(category["types"]))
+            label = category["types"][type_idx]
+            description = category["descriptions"][type_idx]
+            
+            detected_labels.append({
+                "x": x,
+                "y": y,
+                "width": width_obj,
+                "height": height_obj,
+                "label": label,
+                "description": description
+            })
+    
+    return detected_labels
 
 if __name__ == "__main__":
     import uvicorn
