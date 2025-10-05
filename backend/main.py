@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Query, File, UploadFile, Request
+from fastapi import FastAPI, HTTPException, Depends, Query, File, UploadFile, Request, Body
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -536,6 +536,54 @@ async def delete_dataset_labels(
 
     return {"message": f"{deleted_count} labels deleted successfully"}
 
+@app.post("/datasets/{dataset_id}/review-ml-annotations")
+async def review_ml_annotations(
+    dataset_id: int,
+    accepted: List[dict] = Body(...),
+    rejected: List[dict] = Body(...),
+    db: SessionLocal = Depends(get_db)
+):
+    """Process the review of ML-generated annotations"""
+    # Get the dataset
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+        
+    # Delete rejected ML annotations
+    if rejected:
+        rejected_ids = [anno["id"] for anno in rejected if "id" in anno]
+        if rejected_ids:
+            db.query(Label).filter(
+                Label.id.in_(rejected_ids),
+                Label.user_id == "ml_analysis"
+            ).delete(synchronize_session=False)
+            db.commit()
+    
+    # Update accepted annotations that were modified
+    updated_count = 0
+    for anno in accepted:
+        if "id" in anno and ("label" in anno or "description" in anno):
+            label = db.query(Label).filter(
+                Label.id == anno["id"],
+                Label.user_id == "ml_analysis"
+            ).first()
+            if label:
+                if "label" in anno:
+                    label.label = anno["label"]
+                if "description" in anno:
+                    label.description = anno["description"]
+                updated_count += 1
+    
+    if updated_count > 0:
+        db.commit()
+    
+    return {
+        "message": f"ML annotation review processed successfully",
+        "accepted_count": len(accepted),
+        "rejected_count": len(rejected),
+        "updated_count": updated_count
+    }
+
 @app.post("/process-image/enhance")
 async def enhance_image(
     image_id: int = Query(...),
@@ -836,6 +884,7 @@ async def analyze_dataset_with_ml(
         
         # Save annotations to database with special user_id
         saved_annotations = []
+        label_objects = []
         for annotation in annotations:
             new_label = Label(
                 dataset_id=dataset_id,
@@ -848,9 +897,17 @@ async def analyze_dataset_with_ml(
                 description=annotation.get("description")
             )
             db.add(new_label)
-            saved_annotations.append(annotation)
+            label_objects.append(new_label)
         
         db.commit()
+        
+        # Create response annotations with database-generated IDs
+        for i, label in enumerate(label_objects):
+            annotation_with_id = {
+                **annotations[i],
+                "id": label.id  # Include the database-generated ID
+            }
+            saved_annotations.append(annotation_with_id)
         
         return {
             "success": True,

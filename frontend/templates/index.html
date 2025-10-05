@@ -174,13 +174,13 @@
             <div class="col-6">
               <div class="card stats-card">
                 <div class="stats-number" id="dataset-count">0</div>
-                <div>Datasets</div>
+                <div class="text-white">Datasets</div>
               </div>
             </div>
             <div class="col-6">
               <div class="card stats-card">
                 <div class="stats-number" id="image-count">0</div>
-                <div>Images</div>
+                <div class="text-white">Images</div>
               </div>
             </div>
           </div>
@@ -843,14 +843,6 @@
       }
     }
 
-    // Function to review ML-generated annotations
-    function reviewMLAnnotations(annotations) {
-      // For now, we'll just load the labels which will display them in the table and on the viewer
-      // In a more advanced implementation, we could show a modal for reviewing each annotation individually
-      showNotification(`You can now review the ML-generated annotations in the table below.`);
-    }
-
-    
      // Store for ML annotations being reviewed
      let currentMLAnnotations = [];
      let currentMLAnnotationIndex = 0;
@@ -874,8 +866,11 @@
        // Show the modal
        document.getElementById('mlReviewModal').classList.remove('hidden');
 
-       // Disable the "Run ML Analysis" button during review
-       document.getElementById('runMLAnalysisBtn').disabled = true;
+       // Disable the "Run ML Analysis" button while processing if it exists
+      const runMLBtn = document.getElementById('runMLAnalysisBtn');
+      if (runMLBtn) {
+        runMLBtn.disabled = true;
+      }
      }
 
      // Create the review modal HTML
@@ -1229,14 +1224,43 @@
        // Close the modal
        closeReviewModal();
 
-       // Show summary notification
-       showNotification(`ML annotation review completed. Accepted: ${acceptedMLAnnotations.length}, Rejected: ${rejectedMLAnnotations.length}.`);
+       // Send accepted and rejected annotations to backend
+       if (currentDataset && (acceptedMLAnnotations.length > 0 || rejectedMLAnnotations.length > 0)) {
+         fetch(`/datasets/${currentDataset}/review-ml-annotations`, {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json'
+           },
+           body: JSON.stringify({
+             accepted: acceptedMLAnnotations,
+             rejected: rejectedMLAnnotations
+           })
+         })
+         .then(response => response.json())
+         .then(data => {
+           // Show summary notification
+           showNotification(`ML annotation review processed. Accepted: ${data.accepted_count}, Rejected: ${data.rejected_count}, Updated: ${data.updated_count}.`);
+           
+           // Refresh the labels to show the accepted annotations
+           loadLabels(currentDataset);
+         })
+         .catch(error => {
+           console.error('Error processing ML annotation review:', error);
+           showNotification('Failed to process ML annotation review. Please try again.', 'error');
+         });
+       } else {
+         // Show summary notification
+         showNotification(`ML annotation review completed. Accepted: ${acceptedMLAnnotations.length}, Rejected: ${rejectedMLAnnotations.length}.`);
+         
+         // Refresh the labels to show the accepted annotations
+         loadLabels(currentDataset);
+       }
 
-       // Refresh the labels to show the accepted annotations
-       loadLabels(currentDataset);
-
-       // Re-enable the "Run ML Analysis" button
-       document.getElementById('runMLAnalysisBtn').disabled = false;
+       // Re-enable the "Run ML Analysis" button if it exists
+      const runMLBtn = document.getElementById('runMLAnalysisBtn');
+      if (runMLBtn) {
+        runMLBtn.disabled = false;
+      }
      }
 
      // Close the review modal
@@ -1252,8 +1276,11 @@
        // Remove event listener
        document.removeEventListener('keydown', handleEscapeKey);
 
-       // Re-enable the "Run ML Analysis" button
-       document.getElementById('runMLAnalysisBtn').disabled = false;
+       // Re-enable the "Run ML Analysis" button if it exists
+       const runMLBtn = document.getElementById('runMLAnalysisBtn');
+       if (runMLBtn) {
+         runMLBtn.disabled = false;
+       }
      }
 
      // Handle escape key to close modal
