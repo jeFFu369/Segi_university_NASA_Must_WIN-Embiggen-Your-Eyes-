@@ -987,13 +987,16 @@ def simulate_faster_rcnn_detection(dataset_id, images, db):
             label = labels[label_idx]
             description = descriptions[label_idx]
             
+            # Generate a reasonable confidence value between 0.7 and 0.95
+            confidence = np.random.uniform(0.7, 0.95)
             detected_labels.append({
                 "x": x,
                 "y": y,
                 "width": box_width,
                 "height": box_height,
                 "label": label,
-                "description": description
+                "description": description,
+                "confidence": confidence
             })
     
     return detected_labels
@@ -1067,11 +1070,14 @@ def simulate_deep_source_finder(dataset_id, images, db):
                 label = 'Source'
                 description = 'Astronomical source detected'
             
+            # Generate a reasonable confidence value between 0.7 and 0.95
+            confidence = np.random.uniform(0.7, 0.95)
             detected_labels.append({
                 "x": x,
                 "y": y,
                 "label": label,
-                "description": description
+                "description": description,
+                "confidence": confidence
             })
     
     return detected_labels
@@ -1150,13 +1156,16 @@ def simulate_astronet_detection(dataset_id, images, db):
             label = category["types"][type_idx]
             description = category["descriptions"][type_idx]
             
+            # Generate a reasonable confidence value between 0.7 and 0.95
+            confidence = np.random.uniform(0.7, 0.95)
             detected_labels.append({
                 "x": x,
                 "y": y,
                 "width": width_obj,
                 "height": height_obj,
                 "label": label,
-                "description": description
+                "description": description,
+                "confidence": confidence
             })
     
     return detected_labels

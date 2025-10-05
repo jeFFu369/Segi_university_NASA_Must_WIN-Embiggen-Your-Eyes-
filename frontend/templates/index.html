@@ -219,6 +219,9 @@
               <button class="btn btn-outline-secondary" onclick="clearLabels()">
                 <i class="fas fa-trash me-1"></i>Clear All Labels
               </button>
+              <button class="btn btn-info" onclick="downloadAnnotationsGeoJSON()">
+                <i class="fas fa-download me-1"></i>Download GeoJSON
+              </button>
             </div>
           </div>
         </div>
@@ -254,9 +257,9 @@
               <button class="btn btn-sm btn-outline-light me-2" onclick="toggleFullscreen()">
                 <i class="fas fa-expand"></i>
               </button>
-              <button class="btn btn-sm btn-outline-light" onclick="downloadImage()">
+              <!-- <button class="btn btn-sm btn-outline-light" onclick="downloadImage()">
                 <i class="fas fa-download"></i>
-              </button>
+              </button> -->
             </div>
           </div>
           
@@ -372,6 +375,7 @@
     let viewer;
     let currentDataset = null;
     let currentImage = null;
+    let currentMLModel = 'Unknown';
     let annotationMode = false;
     let datasets = [];
     let images = [];
@@ -441,6 +445,68 @@
         return;
       }
       showNotification('Download feature would be implemented in a production environment.');
+    }
+
+    // Download annotations in GeoJSON format
+    async function downloadAnnotationsGeoJSON() {
+      if (!currentDataset) {
+        showNotification('Please select a dataset first.', 'error');
+        return;
+      }
+
+      try {
+        // Fetch all labels for the current dataset
+        const response = await fetch(`/datasets/${currentDataset}/labels/`);
+        const labels = await response.json();
+
+        if (labels.length === 0) {
+          showNotification('No annotations available to download.', 'error');
+          return;
+        }
+
+        // Convert labels to GeoJSON format
+        const geojson = {
+          type: "FeatureCollection",
+          features: labels.map(label => ({
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [label.x, label.y] // GeoJSON uses [longitude, latitude] order
+            },
+            properties: {
+              id: label.id,
+              label: label.label,
+              description: label.description || '',
+              user_id: label.user_id || 'unknown',
+              created_at: label.created_at,
+              // Include image dimensions for reference if available
+              image_id: currentImage || 'unknown'
+            }
+          }))
+        };
+
+        // Create a Blob from the GeoJSON string
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `annotations_${currentDataset}_${new Date().toISOString().slice(0,10)}.geojson`;
+        document.body.appendChild(a);
+
+        // Trigger download
+        a.click();
+
+        // Clean up
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification(`Successfully downloaded ${labels.length} annotations as GeoJSON.`);
+      } catch (error) {
+        console.error('Error downloading annotations:', error);
+        showNotification(`Failed to download annotations: ${error.message}`, 'error');
+      }
     }
 
     // Initialize Viewer
@@ -829,6 +895,9 @@
             
             // If annotations were found, allow user to review them
             if (result.annotations.length > 0) {
+              // Store the model used for reference
+              currentMLModel = result.model_used || 'Unknown';
+              // Pass the annotations to the review function
               reviewMLAnnotations(result.annotations);
             }
           } else {
@@ -886,9 +955,9 @@
        modalContainer.id = 'mlReviewModal';
        modalContainer.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center';
        modalContainer.innerHTML = `
-         <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+         <div class="bg-dark rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
            <div class="flex justify-between items-center mb-4">
-             <h3 class="text-xl font-bold text-gray-800">Review ML-Generated Annotations</h3>
+             <h3 class="text-xl font-bold text-gray">Review ML-Generated Annotations</h3>
              <button id="closeReviewModalBtn" class="text-gray-500 hover:text-gray-700">
                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -908,20 +977,20 @@
 
            <div id="annotationDetails" class="mb-6">
              <div class="mb-2">
-               <label class="block text-sm font-medium text-gray-700 mb-1">Label:</label>
+               <label class="block text-sm font-medium text-gray-300 mb-1">Label:</label>
                <input type="text" id="annotationLabel" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" readonly>
              </div>
              <div class="mb-2">
-               <label class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
+               <label class="block text-sm font-medium text-gray-300 mb-1">Description:</label>
                <textarea id="annotationDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="2" readonly></textarea>
              </div>
              <div class="grid grid-cols-2 gap-4 mb-2">
                <div>
-                 <label class="block text-sm font-medium text-gray-700 mb-1">Confidence:</label>
+                 <label class="block text-sm font-medium text-gray-300 mb-1">Confidence:</label>
                  <input type="text" id="annotationConfidence" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" readonly>
                </div>
                <div>
-                 <label class="block text-sm font-medium text-gray-700 mb-1">Model Used:</label>
+                 <label class="block text-sm font-medium text-gray-300 mb-1">Model Used:</label>
                  <input type="text" id="annotationModel" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" readonly>
                </div>
              </div>
@@ -1062,7 +1131,8 @@
        document.getElementById('annotationDescription').value = currentAnnotation.description || 'No description';
        document.getElementById('annotationConfidence').value = currentAnnotation.confidence ? 
          `${(currentAnnotation.confidence * 100).toFixed(1)}%` : 'N/A';
-       document.getElementById('annotationModel').value = currentAnnotation.model_used || 'Unknown';
+       // Use the global currentMLModel variable since model_used isn't stored per annotation
+       document.getElementById('annotationModel').value = currentMLModel;
 
        // Update the progress
        document.getElementById('currentAnnotationIndex').textContent = currentMLAnnotationIndex + 1;
